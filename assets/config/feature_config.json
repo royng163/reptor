@@ -1,0 +1,25 @@
+{
+  "version": 4,
+  "feature_names": [
+    "hip_flexion_left",
+    "hip_flexion_right",
+    "knee_flexion_left",
+    "knee_flexion_right",
+    "elbow_flexion_left",
+    "elbow_flexion_right",
+    "shoulder_flexion_left",
+    "shoulder_flexion_right",
+    "trunk_angle",
+    "stance_width_normalized",
+    "wrist_to_shoulder_y_left",
+    "wrist_to_shoulder_y_right",
+    "elbow_to_shoulder_y_left",
+    "elbow_to_shoulder_y_right",
+    "knee_joint_center_x_offset",
+    "torso_tilt"
+  ],
+  "mean": [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+  ],
+  "std": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+}

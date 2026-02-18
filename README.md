@@ -1,73 +1,57 @@
-# Minimal Uniwind Template
+# Reptor: AI-Powered Personal Trainer
 
-This is a [React Native](https://reactnative.dev/) project built with [Expo](https://expo.dev/) and [React Native Reusables](https://reactnativereusables.com).
+Reptor is a privacy-first mobile workout application that uses on-device computer vision to provide real-time posture correction.
 
-It was initialized using the following command:
+## 📱 Tech Stack
 
-```bash
-npx @react-native-reusables/cli@latest init -t reptor
-```
+- **Framework**: React Native, Expo
+- **UI & Style**: Uniwind, React Native Reusables
+- **Pose Estimation**: Blazepose / MoveNet on TFLite
+- **Evaluation Logic**: [`@royng163/reptor-core`](https://github.com/royng163/reptor-core)
 
-## Getting Started
+## 🏗 Architecture
 
-To run the development server:
+Reptor follows a **Teacher-Student** knowledge distillation architecture:
 
-```bash
-    npm run dev
-    # or
-    yarn dev
-    # or
-    pnpm dev
-    # or
-    bun dev
-```
+1.  **Teacher (Offline)**: High-capacity Python models analyze complex temporal patterns to generate ground-truth quality scores and error labels.
+2.  **Distillation**: These insights are converted into lightweight, interpretable rules (thresholds, weights) and a Tiny Scorer model.
+3.  **Student (This App)**: Runs locally on the phone. It executes the distilled rules against real-time landmarks from Blazepose to provide instant feedback.
 
-This will start the Expo Dev Server. Open the app in:
+### Key Modules
 
-- **iOS**: press `i` to launch in the iOS simulator _(Mac only)_
-- **Android**: press `a` to launch in the Android emulator
-- **Web**: press `w` to run in a browser
+- **Vision Pipeline**: Captures camera frames and runs Blazepose inference.
+- **Rule Engine**: Consumes `rule_config.json` to check for errors (e.g., "Knees caving in").
+- **Feedback UI**: Renders corrective cues overlaying the camera feed.
 
-You can also scan the QR code using the [Expo Go](https://expo.dev/go) app on your device. This project fully supports running in Expo Go for quick testing on physical devices.
+## 🛠 Getting Started
 
-## Adding components
-
-You can add more reusable components using the CLI:
+### Installation
 
 ```bash
-npx react-native-reusables/cli@latest add [...components]
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
 ```
 
-> e.g. `npx react-native-reusables/cli@latest add input textarea`
+## 📂 Project Structure
 
-If you don't specify any component names, you'll be prompted to select which components to add interactively. Use the `--all` flag to install all available components at once.
-
-## Project Features
-
-- ⚛️ Built with [Expo Router](https://expo.dev/router)
-- 🎨 Styled with [Tailwind CSS](https://tailwindcss.com/) via [Uniwind](https://uniwind.dev/)
-- 📦 UI powered by [React Native Reusables](https://github.com/founded-labs/react-native-reusables)
-- 🚀 New Architecture enabled
-- 🔥 Edge to Edge enabled
-- 📱 Runs on iOS, Android, and Web
-
-## Learn More
-
-To dive deeper into the technologies used:
-
-- [React Native Docs](https://reactnative.dev/docs/getting-started)
-- [Expo Docs](https://docs.expo.dev/)
-- [Uniwind Docs](https://docs.uniwind.dev/)
-- [React Native Reusables](https://reactnativereusables.com)
-
-## Deploy with EAS
-
-The easiest way to deploy your app is with [Expo Application Services (EAS)](https://expo.dev/eas).
-
-- [EAS Build](https://docs.expo.dev/build/introduction/)
-- [EAS Updates](https://docs.expo.dev/eas-update/introduction/)
-- [EAS Submit](https://docs.expo.dev/submit/introduction/)
-
----
-
-If you enjoy using React Native Reusables, please consider giving it a ⭐ on [GitHub](https://github.com/founded-labs/react-native-reusables). Your support means a lot!
+```
+reptor/
+├── assets/               # Images and icons
+├── app/                  # Expo Router file-based navigation
+│   ├── (tabs)/           # Main app tabs (Workout, Profile)
+│   ├── _layout.tsx       # Root layout
+│   └── index.tsx         # Entry screen
+├── components/           # Reusable UI components
+│   └── ui/               # Generic buttons, cards
+├── hooks/                # Custom React hooks
+├── services/
+│   ├── camera/           # Camera manager
+│   └── evaluation/       # Workout posture correction
+│       └── rules/        # Distilled rule_config.json
+├── lib/                  # Utility functions and shared logic
+├── README.md             # This file
+└── package.json          # Project dependencies and scripts
+```

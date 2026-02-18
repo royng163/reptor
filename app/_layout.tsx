@@ -6,6 +6,8 @@ import { PortalHost } from '@rn-primitives/portal';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useUniwind } from 'uniwind';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -16,10 +18,17 @@ export default function RootLayout() {
   const { theme } = useUniwind();
 
   return (
-    <ThemeProvider value={NAV_THEME[theme ?? 'light']}>
-      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <Stack />
-      <PortalHost />
-    </ThemeProvider>
+    <GestureHandlerRootView>
+      <SafeAreaProvider>
+        <ThemeProvider value={NAV_THEME[theme ?? 'light']}>
+          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="evaluation/index" />
+          </Stack>
+          <PortalHost />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,0 +1,231 @@
+{
+  "version": 2,
+  "exercises": [
+    {
+      "id": "squat",
+      "rules": [
+        {
+          "error_type": "INSUFFICIENT_RANGE",
+          "template": "range",
+          "feature": "knee_flexion_left",
+          "comparator": "BELOW",
+          "interval": "REP",
+          "views": ["front", "side", "45_degree"],
+          "description": "Checks for adequate squat depth at the inflection point.",
+          "weight": 0.15
+        },
+        {
+          "error_type": "BAD_ALIGNMENT",
+          "template": "alignment",
+          "feature": "knee_joint_center_x_offset",
+          "phases": ["CONCENTRIC", "ECCENTRIC"],
+          "interval": "FRAME",
+          "views": ["front", "45_degree"],
+          "description": "Detects knee valgus (knees caving in).",
+          "weight": 0.2
+        },
+        {
+          "error_type": "BAD_SETUP",
+          "template": "range",
+          "feature": "stance_width_normalized",
+          "comparator": "MEAN",
+          "phases": ["IDLE"],
+          "interval": "FRAME",
+          "views": ["front", "45_degree"],
+          "description": "Checks if legs are set too narrow or too wide at the start.",
+          "weight": 0.15
+        },
+        {
+          "error_type": "INSTABILITY",
+          "template": "stability",
+          "feature": "trunk_angle",
+          "phases": ["CONCENTRIC", "ECCENTRIC"],
+          "interval": "FRAME",
+          "views": ["side", "45_degree"],
+          "description": "Detects excessive trunk sway or 'good morning' squats.",
+          "weight": 0.25
+        },
+        {
+          "error_type": "BAD_TEMPO",
+          "template": "duration",
+          "phases": ["CONCENTRIC"],
+          "interval": "PHASE",
+          "views": ["front", "side", "45_degree"],
+          "description": "Ensures controlled descent. Triggers if user 'drops' into the squat too fast.",
+          "weight": 0.1
+        },
+        {
+          "error_type": "MOMENTUM_CHEAT",
+          "template": "tempo",
+          "feature": "hip_flexion_symmetry",
+          "phases": ["ECCENTRIC"],
+          "interval": "PHASE",
+          "views": ["front", "45_degree"],
+          "description": "Detects excessive 'hip drive' or jerking the torso to stand up.",
+          "weight": 0.15
+        }
+      ]
+    },
+    {
+      "id": "bicep_curl",
+      "rules": [
+        {
+          "error_type": "INSUFFICIENT_RANGE",
+          "template": "range",
+          "feature": "elbow_flexion_left",
+          "comparator": "BELOW",
+          "phases": ["CONCENTRIC"],
+          "interval": "PHASE",
+          "views": ["front", "side", "45_degree"],
+          "description": "Checks for full contraction at the top of the curl.",
+          "weight": 0.15
+        },
+        {
+          "error_type": "INSUFFICIENT_RANGE",
+          "template": "range",
+          "feature": "elbow_flexion_left",
+          "comparator": "ABOVE",
+          "phases": ["ECCENTRIC"],
+          "interval": "PHASE",
+          "views": ["front", "side", "45_degree"],
+          "description": "Checks for full extension at the bottom.",
+          "weight": 0.15
+        },
+        {
+          "error_type": "MOMENTUM_CHEAT",
+          "template": "alignment",
+          "feature": "elbow_to_shoulder_y_left",
+          "phases": ["CONCENTRIC"],
+          "interval": "PHASE",
+          "views": ["front", "side", "45_degree"],
+          "description": "Detects swinging the weights forward to gain momentum.",
+          "weight": 0.3
+        },
+        {
+          "error_type": "BAD_ALIGNMENT",
+          "template": "alignment",
+          "feature": "torso_tilt",
+          "phases": ["CONCENTRIC"],
+          "interval": "PHASE",
+          "views": ["side", "45_degree"],
+          "description": "Detects leaning back to finish the curl.",
+          "weight": 0.4
+        }
+      ]
+    },
+    {
+      "id": "shoulder_press",
+      "rules": [
+        {
+          "error_type": "INSUFFICIENT_RANGE",
+          "template": "range",
+          "feature": "elbow_flexion_left",
+          "comparator": "ABOVE",
+          "phases": ["CONCENTRIC"],
+          "interval": "PHASE",
+          "views": ["front", "45_degree"],
+          "description": "Checks for full arm extension at the top.",
+          "weight": 0.3
+        },
+        {
+          "error_type": "ASYMMETRY",
+          "template": "symmetry",
+          "feature_left": "wrist_to_shoulder_y_left",
+          "feature_right": "wrist_to_shoulder_y_right",
+          "interval": "REP",
+          "views": ["front", "45_degree"],
+          "description": "Detects uneven shoulder activation or tilting.",
+          "weight": 0.3
+        },
+        {
+          "error_type": "BAD_ALIGNMENT",
+          "template": "alignment",
+          "feature": "trunk_angle",
+          "interval": "REP",
+          "views": ["side", "45_degree"],
+          "description": "Detects excessive lower back arching.",
+          "weight": 0.4
+        }
+      ]
+    },
+    {
+      "id": "bench_press",
+      "rules": [
+        {
+          "error_type": "INSUFFICIENT_RANGE",
+          "template": "range",
+          "feature": "elbow_flexion_left",
+          "comparator": "BELOW",
+          "phases": ["CONCENTRIC"],
+          "interval": "PHASE",
+          "views": ["side", "45_degree"],
+          "description": "Checks if the bar reaches the chest.",
+          "weight": 0.15
+        },
+        {
+          "error_type": "ASYMMETRY",
+          "template": "symmetry",
+          "feature_left": "wrist_to_shoulder_y_left",
+          "feature_right": "wrist_to_shoulder_y_right",
+          "interval": "REP",
+          "views": ["front", "45_degree"],
+          "description": "Detects bar tilting during the press phases.",
+          "weight": 0.15
+        },
+        {
+          "error_type": "BAD_ALIGNMENT",
+          "template": "alignment",
+          "feature": "trunk_angle",
+          "interval": "REP",
+          "views": ["side", "45_degree"],
+          "description": "Detects excessive lower back arching or raising the chest.",
+          "weight": 0.4
+        },
+        {
+          "error_type": "BAD_TEMPO",
+          "template": "duration",
+          "phases": ["CONCENTRIC"],
+          "interval": "PHASE",
+          "views": ["front", "side", "45_degree"],
+          "description": "Detects dropping the bar too fast on the chest.",
+          "weight": 0.3
+        }
+      ]
+    },
+    {
+      "id": "lat_pulldown",
+      "rules": [
+        {
+          "error_type": "INSUFFICIENT_RANGE",
+          "template": "range",
+          "feature": "wrist_to_shoulder_y_left",
+          "comparator": "BELOW",
+          "phases": ["CONCENTRIC"],
+          "interval": "PHASE",
+          "views": ["front", "side", "45_degree"],
+          "description": "Checks if the bar is pulled down to the upper chest.",
+          "weight": 0.3
+        },
+        {
+          "error_type": "BAD_ALIGNMENT",
+          "template": "alignment",
+          "feature": "torso_tilt",
+          "interval": "REP",
+          "views": ["side", "45_degree"],
+          "description": "Detects excessive leaning back using bodyweight.",
+          "weight": 0.4
+        },
+        {
+          "error_type": "ASYMMETRY",
+          "template": "symmetry",
+          "feature_left": "wrist_to_shoulder_y_left",
+          "feature_right": "wrist_to_shoulder_y_right",
+          "interval": "REP",
+          "views": ["front", "45_degree"],
+          "description": "Detects uneven shoulder activation or tilting.",
+          "weight": 0.3
+        }
+      ]
+    }
+  ]
+}
