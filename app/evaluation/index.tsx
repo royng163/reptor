@@ -3,14 +3,13 @@ import { Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import CameraView from '@/components/CameraView';
-import {
-  PosePayload,
-  setPoseDebugMode,
-  type Landmark,
-} from '@/services/evaluation/inferenceService';
+import { PoseResult, setPoseDebugMode, type Landmark } from '@/services/evaluation/poseInference';
 import { evaluateRules, loadRuleConfig, type RuleConfig } from '@/services/evaluation/RuleEngine';
 import ruleConfigJson from '@/assets/config/rule_config.json';
 import featureConfigJson from '@/assets/config/feature_config.json';
+import { FpsNormalizer } from '@/lib/fps';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircleIcon } from 'lucide-react-native';
 
 type FeatureConfig = { feature_names: string[] };
 
@@ -75,7 +74,7 @@ export default function EvaluationScreen() {
 
   const ruleConfig = useMemo(() => loadRuleConfig(ruleConfigJson as RuleConfig), []);
   const featureOrder = useMemo(() => (featureConfigJson as FeatureConfig).feature_names ?? [], []);
-  const snapPoints = useMemo(() => ['10%', '55%', '90%'], []);
+  const snapPoints = useMemo(() => ['10%', '35%', '55%', '90%'], []);
 
   const activeExercise = useMemo(
     () => ruleConfig.exercises.find((e) => e.id === exerciseId),
@@ -84,33 +83,39 @@ export default function EvaluationScreen() {
   const activeRules = activeExercise?.rules ?? [];
   const triggeredErrors = useMemo(() => new Set(lastEval?.errors ?? []), [lastEval?.errors]);
 
-  // Debug logging
-  const [frameCount, setFrameCount] = useState(0);
-  const [inferenceLatencyMs, setInferenceLatencyMs] = useState(0);
-  const [fps, setFps] = useState(0);
+  const normalizerRef = useRef(new FpsNormalizer(30));
 
-  const fpsStartTsRef = useRef<number | null>(null);
+  // Debug logging
+  const [fps, setFps] = useState(0);
+  const [normalizedFps, setNormalizedFps] = useState(0);
+
+  // Reset normalizer when exercise changed
+  useEffect(() => {
+    normalizerRef.current.reset();
+  }, [exerciseId]);
 
   useEffect(() => {
     setPoseDebugMode(__DEV__);
   }, []);
 
   const handlePose = useCallback(
-    async ({ landmarks, timestamp, frameCount, inferenceMs }: PosePayload) => {
+    async ({ landmarks, timestamp }: PoseResult) => {
       if (inFlightRef.current) return;
       inFlightRef.current = true;
       try {
-        const aggFeatures = extractAggFeatures(landmarks);
-        const result = evaluateRules(ruleConfig, exerciseId, aggFeatures);
-        setFeatureStats(aggFeatures);
-        setLastEval(result);
+        const normalizedSamples = normalizerRef.current.push(landmarks, timestamp);
 
-        setFrameCount(frameCount);
-        setInferenceLatencyMs(inferenceMs);
+        // RuleEngine always sees normalized 30 FPS stream
+        for (const sample of normalizedSamples) {
+          const aggFeatures = extractAggFeatures(sample.landmarks);
+          const result = evaluateRules(ruleConfig, exerciseId, aggFeatures);
 
-        if (fpsStartTsRef.current == null) fpsStartTsRef.current = timestamp;
-        const elapsedSec = (timestamp - fpsStartTsRef.current) / 1000;
-        if (elapsedSec > 0) setFps(frameCount / elapsedSec);
+          setFeatureStats(aggFeatures);
+          setLastEval(result);
+        }
+
+        setFps(normalizerRef.current.getInputFps());
+        setNormalizedFps(normalizerRef.current.getNormalizedFps());
       } finally {
         inFlightRef.current = false;
       }
@@ -122,34 +127,33 @@ export default function EvaluationScreen() {
     <View className="bg-background flex-1">
       <Stack.Screen options={{ title: exerciseName }} />
 
+      {fps < 15 ? (
+        <View className="absolute top-3 right-3 left-3 z-50">
+          <Alert variant="destructive" icon={AlertCircleIcon}>
+            <AlertTitle>Minimum Hardware Requirement Not Met</AlertTitle>
+            <AlertDescription>
+              Your device is running at {fps.toFixed(0)} FPS, which is below the minimum requirement
+            </AlertDescription>
+          </Alert>
+        </View>
+      ) : null}
+
       <View className="flex-1">
         <CameraView onPose={handlePose} />
       </View>
 
       <BottomSheet
-        index={0}
         snapPoints={snapPoints}
-        enablePanDownToClose={false}
+        enableContentPanningGesture={false}
         backgroundStyle={{ backgroundColor: 'transparent' }}
         handleIndicatorStyle={{ backgroundColor: '#71717a' }}>
         <View className="border-border bg-card flex-1 rounded-t-2xl border px-4 pt-2">
           <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-            <Text className="text-foreground text-sm font-semibold">Inference Stats</Text>
-            <View className="mt-2 gap-1">
-              <View className="border-border bg-background flex-row items-center justify-between rounded-md border px-3 py-2">
-                <Text className="text-foreground text-xs">FPS</Text>
-                <Text className="text-muted-foreground text-xs">{fps.toFixed(1)}</Text>
-              </View>
-              <View className="border-border bg-background flex-row items-center justify-between rounded-md border px-3 py-2">
-                <Text className="text-foreground text-xs">Latency</Text>
-                <Text className="text-muted-foreground text-xs">
-                  {inferenceLatencyMs.toFixed(1)} ms
-                </Text>
-              </View>
-              <View className="border-border bg-background flex-row items-center justify-between rounded-md border px-3 py-2">
-                <Text className="text-foreground text-xs">Frame Count</Text>
-                <Text className="text-muted-foreground text-xs">{frameCount}</Text>
-              </View>
+            <View className="border-border bg-background mb-3 flex-row items-center justify-between rounded-md border px-3 py-2">
+              <Text className="text-muted-foreground text-xs">FPS: {fps.toFixed(1)}</Text>
+              <Text className="text-muted-foreground text-xs">
+                Normalized FPS: {normalizedFps.toFixed(1)}
+              </Text>
             </View>
 
             <Text className="text-foreground text-sm font-semibold">

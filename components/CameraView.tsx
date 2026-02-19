@@ -1,30 +1,50 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import {
   Camera,
   useCameraDevice,
+  useCameraFormat,
   useCameraPermission,
   useFrameProcessor,
 } from 'react-native-vision-camera';
-import { useTensorflowModel } from 'react-native-fast-tflite';
 import { useResizePlugin } from 'vision-camera-resize-plugin';
 import { Worklets } from 'react-native-worklets-core';
-import { decodePoseOutputs, type PosePayload } from '@/services/evaluation/inferenceService';
+import {
+  decodePoseOutputs,
+  loadPoseModel,
+  type PoseResult,
+} from '@/services/evaluation/poseInference';
+import { useNavigation } from 'expo-router';
+import { useAppState } from '@react-native-community/hooks';
 
-export default function CameraView({ onPose }: { onPose: (payload: PosePayload) => void }) {
+export default function CameraView({ onPose }: { onPose: (payload: PoseResult) => void }) {
   const device = useCameraDevice('front');
+  const format = useCameraFormat(device, [{ fps: 30 }]);
   const { hasPermission, requestPermission } = useCameraPermission();
   const { resize } = useResizePlugin();
-  let workletFrameCount = 0;
 
-  const modelState = useTensorflowModel(
-    require('@/assets/models//blazepose/blazepose_lite.tflite')
-  );
-  const model = modelState.state === 'loaded' ? modelState.model : undefined;
+  // Pause camera when nagivated to another screen or app in background
+  const isFocused = useNavigation().isFocused();
+  const inForeground = useAppState() === 'active';
+  const isActive = isFocused && inForeground;
 
+  const [model, setModel] = useState<any>(null);
+
+  // Check and request camera permission on mount
   useEffect(() => {
     if (!hasPermission) void requestPermission();
   }, [hasPermission, requestPermission]);
+
+  // Load pose model on mount
+  useEffect(() => {
+    let mounted = true;
+    loadPoseModel().then((m) => {
+      if (mounted) setModel(m);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const onPoseJS = useMemo(() => Worklets.createRunOnJS(onPose), [onPose]);
 
@@ -39,18 +59,12 @@ export default function CameraView({ onPose }: { onPose: (payload: PosePayload) 
         dataType: 'float32',
       });
 
-      const t0 = global.performance?.now?.() ?? Date.now();
       const outputs = model.runSync([input]);
-      const t1 = global.performance?.now?.() ?? Date.now();
-
       const landmarks = decodePoseOutputs(outputs as unknown[]);
-      workletFrameCount += 1;
 
       onPoseJS({
         landmarks,
         timestamp: Date.now(),
-        frameCount: workletFrameCount,
-        inferenceMs: t1 - t0,
       });
     },
     [model, onPoseJS, resize]
@@ -67,7 +81,7 @@ export default function CameraView({ onPose }: { onPose: (payload: PosePayload) 
   if (!device) {
     return (
       <View className="border-border flex-1 items-center justify-center rounded-xl border bg-black">
-        <Text className="text-sm text-zinc-400">No camera device</Text>
+        <Text className="text-sm text-zinc-400">No camera found</Text>
       </View>
     );
   }
@@ -77,10 +91,10 @@ export default function CameraView({ onPose }: { onPose: (payload: PosePayload) 
       <Camera
         style={{ flex: 1 }}
         device={device}
-        isActive
-        pixelFormat="yuv"
+        format={format}
+        fps={30}
+        isActive={isActive}
         frameProcessor={frameProcessor}
-        frameProcessorFps={10}
       />
     </View>
   );

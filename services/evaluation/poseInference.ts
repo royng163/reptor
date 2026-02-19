@@ -1,3 +1,5 @@
+import { loadTensorflowModel, TensorflowModel } from 'react-native-fast-tflite';
+
 export type Landmark = {
   name: string;
   x: number;
@@ -6,16 +8,9 @@ export type Landmark = {
   visibility?: number;
 };
 
-export type PoseInferenceResult = {
+export type PoseResult = {
   landmarks: Landmark[];
   timestamp: number;
-};
-
-export type PosePayload = {
-  landmarks: Landmark[];
-  timestamp: number;
-  frameCount: number;
-  inferenceMs: number;
 };
 
 const LANDMARK_NAMES = [
@@ -62,6 +57,30 @@ export function getPoseDebugMode() {
   return DEBUG;
 }
 
+// Singleton pattern to load and cache the pose model
+let poseModel: TensorflowModel | null = null;
+let poseModelPromise: Promise<TensorflowModel> | null = null;
+
+export async function loadPoseModel(): Promise<TensorflowModel> {
+  if (poseModel) return poseModel;
+
+  if (!poseModelPromise) {
+    poseModelPromise = loadTensorflowModel(
+      require('@/assets/models/blazepose/blazepose_lite.tflite')
+    )
+      .then((m) => {
+        poseModel = m;
+        return m;
+      })
+      .catch((e) => {
+        poseModelPromise = null;
+        throw e;
+      });
+  }
+
+  return poseModelPromise;
+}
+
 /**
  * Worklet-safe decode for BlazePose-style output:
  * expects first tensor shaped like [1, N*5] (x,y,z,visibility,presence)
@@ -86,14 +105,4 @@ export function decodePoseOutputs(outputs: unknown[]): Landmark[] {
     });
   }
   return result;
-}
-
-/**
- * Legacy API kept for compatibility with old imports.
- */
-export async function loadModel(_path?: string) {
-  return true;
-}
-export async function inferFromFrame(_frame: unknown): Promise<PoseInferenceResult> {
-  return { landmarks: [], timestamp: Date.now() };
 }
