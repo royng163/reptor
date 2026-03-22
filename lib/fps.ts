@@ -1,15 +1,15 @@
-import type { Landmark, PoseResult } from '../services/evaluation/poseInference';
+import type { Keypoint, PoseResult } from '@royng163/reptor-core';
 
 type State = {
   currentSrcTs: number;
   nextTargetTs: number;
-  frameCount: number;
-  fpsStartTs: number;
+  inputFrameTimestamps: number[];
+  normalizedFrameTimestamps: number[];
   inputFps: number;
-  normalizedFrameCount: number;
-  normalizedFpsStartTs: number;
   normalizedFps: number;
 };
+
+const FPS_WINDOW_MS = 5000;
 
 export class FpsNormalizer {
   private readonly targetIntervalMs: number;
@@ -20,11 +20,9 @@ export class FpsNormalizer {
     this.state = {
       currentSrcTs: 0,
       nextTargetTs: 0,
-      frameCount: 0,
-      fpsStartTs: 0,
+      inputFrameTimestamps: [],
+      normalizedFrameTimestamps: [],
       inputFps: 0,
-      normalizedFrameCount: 0,
-      normalizedFpsStartTs: 0,
       normalizedFps: 0,
     };
   }
@@ -33,11 +31,9 @@ export class FpsNormalizer {
     this.state = {
       currentSrcTs: 0,
       nextTargetTs: 0,
-      frameCount: 0,
-      fpsStartTs: 0,
+      inputFrameTimestamps: [],
+      normalizedFrameTimestamps: [],
       inputFps: 0,
-      normalizedFrameCount: 0,
-      normalizedFpsStartTs: 0,
       normalizedFps: 0,
     };
   }
@@ -50,55 +46,58 @@ export class FpsNormalizer {
     return this.state.normalizedFps;
   }
 
+  private updateInputFps(timestamp: number) {
+    this.state.inputFrameTimestamps.push(timestamp);
+    const cutoff = timestamp - FPS_WINDOW_MS;
+    while (
+      this.state.inputFrameTimestamps.length > 0 &&
+      this.state.inputFrameTimestamps[0] < cutoff
+    ) {
+      this.state.inputFrameTimestamps.shift();
+    }
+    const windowDurationSec = (timestamp - this.state.inputFrameTimestamps[0]) / 1000;
+    if (windowDurationSec > 0) {
+      this.state.inputFps = this.state.inputFrameTimestamps.length / windowDurationSec;
+    }
+  }
+
+  private updateNormalizedFps(timestamp: number) {
+    this.state.normalizedFrameTimestamps.push(timestamp);
+    const cutoff = timestamp - FPS_WINDOW_MS;
+    while (
+      this.state.normalizedFrameTimestamps.length > 0 &&
+      this.state.normalizedFrameTimestamps[0] < cutoff
+    ) {
+      this.state.normalizedFrameTimestamps.shift();
+    }
+    const windowDurationSec = (timestamp - this.state.normalizedFrameTimestamps[0]) / 1000;
+    if (windowDurationSec > 0) {
+      this.state.normalizedFps = this.state.normalizedFrameTimestamps.length / windowDurationSec;
+    }
+  }
+
   /**
    * Input: one source inference sample (irregular FPS)
    * Output: 0..N samples at normalized target FPS
    */
-  push(landmarks: Landmark[], sourceTimestampMs: number): PoseResult[] {
-    // Input FPS calculation
-    this.state.frameCount += 1;
-    if (this.state.fpsStartTs == 0) {
-      this.state.fpsStartTs = sourceTimestampMs;
-    } else {
-      const elapsedSec = (sourceTimestampMs - this.state.fpsStartTs) / 1000;
-      if (elapsedSec > 0) {
-        this.state.inputFps = this.state.frameCount / elapsedSec;
-      }
-    }
+  push(keypoints: Keypoint[], sourceTimestampMs: number): PoseResult[] {
+    this.updateInputFps(sourceTimestampMs);
 
-    // Initialization on first frame
     if (this.state.currentSrcTs == 0) {
       this.state.currentSrcTs = sourceTimestampMs;
       this.state.nextTargetTs = sourceTimestampMs;
-
-      this.state.normalizedFrameCount += 1;
-      if (this.state.normalizedFpsStartTs === 0)
-        this.state.normalizedFpsStartTs = sourceTimestampMs;
-
-      return [{ timestamp: Math.floor(sourceTimestampMs), landmarks }];
+      this.updateNormalizedFps(Math.floor(sourceTimestampMs));
+      return [{ timestamp: Math.floor(sourceTimestampMs), keypoints }];
     }
 
     const frameDurationMs = Math.max(1, sourceTimestampMs - this.state.currentSrcTs);
     const frameEndTs = this.state.currentSrcTs + frameDurationMs;
     const out: PoseResult[] = [];
 
-    // Downsample when source FPS > target FPS
-    // Duplicate when source FPS < target FPS
     while (this.state.nextTargetTs < frameEndTs) {
       const ts = Math.floor(this.state.nextTargetTs);
-      out.push({ timestamp: ts, landmarks });
-
-      // normalized FPS
-      this.state.normalizedFrameCount += 1;
-      if (this.state.normalizedFpsStartTs === 0) {
-        this.state.normalizedFpsStartTs = ts;
-      } else {
-        const elapsedSec = (ts - this.state.normalizedFpsStartTs) / 1000;
-        if (elapsedSec > 0) {
-          this.state.normalizedFps = this.state.normalizedFrameCount / elapsedSec;
-        }
-      }
-
+      out.push({ timestamp: ts, keypoints });
+      this.updateNormalizedFps(ts);
       this.state.nextTargetTs += this.targetIntervalMs;
     }
 

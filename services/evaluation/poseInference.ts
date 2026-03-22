@@ -1,53 +1,6 @@
 import { loadTensorflowModel, TensorflowModel } from 'react-native-fast-tflite';
-
-export type Landmark = {
-  name: string;
-  x: number;
-  y: number;
-  z: number;
-  visibility?: number;
-};
-
-export type PoseResult = {
-  landmarks: Landmark[];
-  timestamp: number;
-};
-
-const LANDMARK_NAMES = [
-  'nose',
-  'left_eye_inner',
-  'left_eye',
-  'left_eye_outer',
-  'right_eye_inner',
-  'right_eye',
-  'right_eye_outer',
-  'left_ear',
-  'right_ear',
-  'mouth_left',
-  'mouth_right',
-  'left_shoulder',
-  'right_shoulder',
-  'left_elbow',
-  'right_elbow',
-  'left_wrist',
-  'right_wrist',
-  'left_pinky',
-  'right_pinky',
-  'left_index',
-  'right_index',
-  'left_thumb',
-  'right_thumb',
-  'left_hip',
-  'right_hip',
-  'left_knee',
-  'right_knee',
-  'left_ankle',
-  'right_ankle',
-  'left_heel',
-  'right_heel',
-  'left_foot_index',
-  'right_foot_index',
-] as const;
+import { LANDMARK_NAMES } from '@/lib/constant';
+import { Keypoint } from '@royng163/reptor-core';
 
 let DEBUG = false;
 export function setPoseDebugMode(v: boolean) {
@@ -85,23 +38,26 @@ export async function loadPoseModel(): Promise<TensorflowModel> {
  * Worklet-safe decode for BlazePose-style output:
  * expects first tensor shaped like [1, N*5] (x,y,z,visibility,presence)
  */
-export function decodePoseOutputs(outputs: unknown[]): Landmark[] {
+function sigmoid(x: number): number {
   'worklet';
-  const out0 = outputs?.[0] as ArrayLike<number> | undefined;
-  if (!out0 || typeof out0.length !== 'number') return [];
+  return 1 / (1 + Math.exp(-x));
+}
 
-  const dimsPerLm = 5;
-  const count = Math.min(LANDMARK_NAMES.length, Math.floor(out0.length / dimsPerLm));
-  const result: Landmark[] = [];
+export function decodePoseOutputs(outputs: unknown[]): Keypoint[] {
+  'worklet';
+  const out0 = outputs[0] as number[];
+  const count = 33;
+  const result: Keypoint[] = [];
 
   for (let i = 0; i < count; i++) {
-    const base = i * dimsPerLm;
+    const base = i * 5;
     result.push({
+      x: out0[base + 0],
+      y: out0[base + 1],
+      z: out0[base + 2] || 0,
+      visibility: sigmoid(out0[base + 3]),
+      presence: sigmoid(out0[base + 4]),
       name: LANDMARK_NAMES[i],
-      x: Number(out0[base + 0] ?? 0),
-      y: Number(out0[base + 1] ?? 0),
-      z: Number(out0[base + 2] ?? 0),
-      visibility: Number(out0[base + 3] ?? 0),
     });
   }
   return result;
