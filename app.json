@@ -33,6 +33,12 @@
     "plugins": [
       "expo-router",
       [
+        "react-native-mediapipe-posedetection",
+        {
+          "assetsPaths": ["./assets/models/blazepose/"]
+        }
+      ],
+      [
         "react-native-fast-tflite",
         {
           "enableAndroidGpuLibraries": true
@@ -42,6 +48,14 @@
         "react-native-vision-camera",
         {
           "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
         }
       ]
     ],

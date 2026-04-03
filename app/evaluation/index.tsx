@@ -3,7 +3,6 @@ import { Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import CameraView from '@/components/CameraView';
-import { setPoseDebugMode } from '@/services/evaluation/poseInference';
 import {
   Keypoint,
   PhaseType,
@@ -171,9 +170,6 @@ export default function EvaluationScreen() {
     ruleEngineRef.current = new RuleEngine(safeExercise as any, { view: 'front' });
     repDetectorRef.current = new RepDetector();
   }, [activeExercise]);
-  useEffect(() => {
-    setPoseDebugMode(__DEV__);
-  }, []);
 
   const handlePose = useCallback(
     async ({ keypoints, timestamp }: PoseResult) => {
