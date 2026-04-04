@@ -1,0 +1,72 @@
+{
+  "version": 2,
+  "exercise_id": 1,
+  "exercise_name": "bicep_curl",
+  "rules": [
+    {
+      "id": "elbow_flexion_concentric",
+      "error_type": "INSUFFICIENT_RANGE",
+      "template": "range",
+      "feature": "elbow_flexion_left",
+      "comparator": "BELOW",
+      "phases": ["CONCENTRIC"],
+      "interval": "PHASE",
+      "views": ["front", "side", "45_degree"],
+      "description": "Checks for full contraction at the top of the curl.",
+      "weight": 0.15,
+      "thresholds": {
+        "front": 0.1,
+        "side": 0.1,
+        "45_degree": 0.1
+      }
+    },
+    {
+      "id": "elbow_flexion_eccentric",
+      "error_type": "INSUFFICIENT_RANGE",
+      "template": "range",
+      "feature": "elbow_flexion_left",
+      "comparator": "ABOVE",
+      "phases": ["ECCENTRIC"],
+      "interval": "PHASE",
+      "views": ["front", "side", "45_degree"],
+      "description": "Checks for full extension at the bottom.",
+      "weight": 0.15,
+      "thresholds": {
+        "front": 0.9,
+        "side": 0.9,
+        "45_degree": 0.9
+      }
+    },
+    {
+      "id": "momentum_cheat",
+      "error_type": "MOMENTUM_CHEAT",
+      "template": "alignment",
+      "feature": "elbow_to_shoulder_y_left",
+      "phases": ["CONCENTRIC"],
+      "interval": "PHASE",
+      "views": ["front", "side", "45_degree"],
+      "description": "Detects swinging the weights forward to gain momentum.",
+      "weight": 0.3,
+      "thresholds": {
+        "front": 0.1,
+        "side": 0.1,
+        "45_degree": 0.1
+      }
+    },
+    {
+      "id": "torso_tilt",
+      "error_type": "BAD_ALIGNMENT",
+      "template": "alignment",
+      "feature": "torso_tilt",
+      "phases": ["CONCENTRIC"],
+      "interval": "PHASE",
+      "views": ["side", "45_degree"],
+      "description": "Detects leaning back to finish the curl.",
+      "weight": 0.4,
+      "thresholds": {
+        "side": 0.15,
+        "45_degree": 0.15
+      }
+    }
+  ]
+}

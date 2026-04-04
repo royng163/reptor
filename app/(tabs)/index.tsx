@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 
-const EXERCISES = ['Squat', 'Bicep Curl', 'Shoulder Press', 'Bench Press', 'Lat Pulldown'] as const;
+const EXERCISES = ['squat', 'bicep_curl', 'shoulder_press', 'bench_press', 'lat_pulldown'] as const;
 type ExerciseId = (typeof EXERCISES)[number];
 
 export default function HomeScreen() {
@@ -23,7 +23,7 @@ export default function HomeScreen() {
 
       {EXERCISES.map((id) => (
         <Button key={id} onPress={() => openEvaluation(id)} variant="outline">
-          <Text>{id}</Text>
+          <Text className="capitalize">{id.replace(/_/g, ' ')}</Text>
         </Button>
       ))}
     </View>

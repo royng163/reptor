@@ -11,20 +11,30 @@ import {
   RepDetector,
   FrameData,
 } from '@royng163/reptor-core';
-import ruleConfigJson from '@/assets/config/rule_config.json';
 import featureConfigJson from '@/assets/config/feature_config.json';
+import squatConfig from '@/assets/config/squat.json';
+import bicepCurlConfig from '@/assets/config/bicep_curl.json';
 import { FpsNormalizer } from '@/lib/fps';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
 
-function normalizeExerciseId(raw?: string | string[]) {
-  const value = Array.isArray(raw) ? raw[0] : raw || 'squat';
-  return value.trim().toLowerCase().replace(/\s+/g, '_');
+const EXERCISE_CONFIGS: Record<string, any> = {
+  squat: squatConfig,
+  bicep_curl: bicepCurlConfig,
+};
+
+function loadExerciseConfig(exerciseId: string): any {
+  const config = EXERCISE_CONFIGS[exerciseId];
+  if (!config) {
+    console.warn(`[RuleEngine] No config found for exercise: "${exerciseId}"`);
+    return null;
+  }
+  return config;
 }
 
-function normalizeExerciseName(raw?: string | string[]) {
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  return value || 'Evaluation';
+function normalizeExerciseName(value: string) {
+  if (!value) return 'Evaluation';
+  return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function toMap(keypoints: Keypoint[]) {
@@ -90,33 +100,32 @@ function evaluateFromRuleEngine(
   return { errors, quality };
 }
 
-function getPhaseFromRepDetector(
-  detector: RepDetector | null,
-  frame: Record<string, number>
-): PhaseType {
+function getPhaseFromRepDetector(detector: RepDetector | null, keypoints: Keypoint[]): PhaseType {
   if (!detector) return 'IDLE';
 
-  const d = detector as any;
+  const byName = new Map<string, Keypoint>();
+  keypoints.forEach((kp) => {
+    if (kp.name) byName.set(kp.name, kp);
+  });
 
-  const result =
-    (typeof d.update === 'function' && d.update(frame)) ||
-    (typeof d.processFrame === 'function' && d.processFrame(frame)) ||
-    (typeof d.detect === 'function' && d.detect(frame));
+  const leftHip = byName.get('left_hip');
+  const rightHip = byName.get('right_hip');
+  const hipY = leftHip && rightHip ? (leftHip.y + rightHip.y) / 2 : undefined;
 
-  const phase = (typeof result === 'string' ? result : (result?.phase ?? result?.currentPhase)) as
-    | PhaseType
-    | undefined;
+  if (hipY === undefined) return 'IDLE';
 
-  return phase === 'CONCENTRIC' || phase === 'ECCENTRIC' || phase === 'IDLE' ? phase : 'IDLE';
+  const result = detector.detect(hipY);
+  return result.state;
 }
 
 export default function EvaluationScreen() {
-  const params = useLocalSearchParams<{ exerciseId?: string | string[] }>();
-  const exerciseName = normalizeExerciseName(params.exerciseId);
-  const exerciseId = normalizeExerciseId(params.exerciseId);
+  const params = useLocalSearchParams<{ exerciseId: string }>();
+  const exerciseId = params.exerciseId;
+  const exerciseName = normalizeExerciseName(exerciseId);
 
   const [lastEval, setLastEval] = useState<{ errors: string[]; quality: number } | null>(null);
   const [featureStats, setFeatureStats] = useState<Record<string, number>>({});
+  const [currentPhase, setCurrentPhase] = useState<string>('IDLE');
   const inFlightRef = useRef(false);
 
   const featureOrder = useMemo(() => featureConfigJson.feature_names ?? [], []);
@@ -130,46 +139,32 @@ export default function EvaluationScreen() {
 
   // Debug logging
   const [fps, setFps] = useState(30);
-  const [normalizedFps, setNormalizedFps] = useState(0);
 
-  const ruleConfigRoot = useMemo(
-    () =>
-      ruleConfigJson as {
-        version: number;
-        exercises: Array<{ id: string; rules: any[] }>;
-      },
-    []
-  );
+  const activeExerciseConfig: any = useMemo(() => {
+    const config = loadExerciseConfig(exerciseId);
+    if (!config) return null;
+    return {
+      version: config.version || 2,
+      exercise_id: config.exercise_id || 0,
+      exercise_name: config.exercise_name || exerciseId,
+      rules: config.rules || [],
+    };
+  }, [exerciseId]);
 
-  const activeExercise = useMemo(() => {
-    const found = ruleConfigRoot.exercises.find((e) => String(e.id).toLowerCase() === exerciseId);
-    if (!found) {
-      console.warn(`[RuleEngine] No exercise found for id: "${exerciseId}"`);
-      return null;
-    }
-    return found;
-  }, [ruleConfigRoot, exerciseId]);
-
-  const activeRules = activeExercise?.rules ?? [];
+  const activeRules = activeExerciseConfig?.rules ?? [];
 
   useEffect(() => {
     normalizerRef.current.reset();
 
-    if (!activeExercise) {
+    if (!activeExerciseConfig) {
       ruleEngineRef.current = null;
       repDetectorRef.current = null;
       return;
     }
 
-    // Guard: ensure rules is always an array
-    const safeExercise = {
-      ...activeExercise,
-      rules: Array.isArray(activeExercise.rules) ? activeExercise.rules : [],
-    };
-
-    ruleEngineRef.current = new RuleEngine(safeExercise as any, { view: 'front' });
+    ruleEngineRef.current = new RuleEngine(activeExerciseConfig, { view: 'front' });
     repDetectorRef.current = new RepDetector();
-  }, [activeExercise]);
+  }, [activeExerciseConfig]);
 
   const handlePose = useCallback(
     async ({ keypoints, timestamp }: PoseResult) => {
@@ -182,7 +177,8 @@ export default function EvaluationScreen() {
         for (const sample of normalizedSamples) {
           const aggFeatures = extractAggFeatures(sample.keypoints);
 
-          const phase = getPhaseFromRepDetector(repDetectorRef.current, aggFeatures);
+          const phase = getPhaseFromRepDetector(repDetectorRef.current, sample.keypoints);
+          setCurrentPhase(phase);
           const result = evaluateFromRuleEngine(ruleEngineRef.current, aggFeatures, phase);
 
           setFeatureStats(aggFeatures);
@@ -191,7 +187,6 @@ export default function EvaluationScreen() {
 
         setRawKeypoints(keypoints);
         setFps(normalizerRef.current.getInputFps());
-        setNormalizedFps(normalizerRef.current.getNormalizedFps());
       } finally {
         inFlightRef.current = false;
       }
@@ -226,14 +221,13 @@ export default function EvaluationScreen() {
         <View className="border-border bg-card flex-1 rounded-t-2xl border px-4 pt-2">
           <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 24 }}>
             <View className="border-border bg-background mb-3 flex-row items-center justify-between rounded-md border px-3 py-2">
+              <Text className="text-muted-foreground text-xs">Phase: {currentPhase}</Text>
               <Text className="text-muted-foreground text-xs">FPS: {fps.toFixed(1)}</Text>
-              <Text className="text-muted-foreground text-xs">
-                Normalized FPS: {normalizedFps.toFixed(1)}
-              </Text>
             </View>
 
+            {/* Evaluation results */}
             <Text className="text-foreground text-sm font-semibold">
-              Rule Triggers ({activeRules.length})
+              Corrections ({activeRules.length})
             </Text>
             <View className="mt-2 gap-1">
               {activeRules.map((r: (typeof activeRules)[number], i: number) => {
@@ -252,7 +246,11 @@ export default function EvaluationScreen() {
                   <View
                     key={`${r.error_type}_${i}`}
                     className="border-border bg-background flex-row items-center justify-between rounded-md border px-3 py-2">
-                    <Text className="text-foreground text-xs">{r.error_type}</Text>
+                    <View className="flex-1 pr-2">
+                      <Text className="text-foreground text-xs font-semibold">
+                        {r.description || r.error_type}
+                      </Text>
+                    </View>
                     <Text
                       className={
                         triggered

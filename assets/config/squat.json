@@ -1,0 +1,100 @@
+{
+  "version": 2,
+  "exercise_id": 0,
+  "exercise_name": "squat",
+  "rules": [
+    {
+      "id": "depth",
+      "error_type": "INSUFFICIENT_RANGE",
+      "template": "range",
+      "feature": "knee_flexion_left",
+      "comparator": "BELOW",
+      "phases": ["CONCENTRIC", "ECCENTRIC"],
+      "interval": "REP",
+      "views": ["front", "side", "45_degree"],
+      "description": "Checks for adequate squat depth at the inflection point.",
+      "weight": 0.15,
+      "thresholds": {
+        "front": 50.09,
+        "side": 50.09,
+        "45_degree": 50.09
+      }
+    },
+    {
+      "id": "knee_alignment",
+      "error_type": "BAD_ALIGNMENT",
+      "template": "alignment",
+      "feature": "knee_joint_center_x_offset",
+      "phases": ["CONCENTRIC", "ECCENTRIC"],
+      "interval": "FRAME",
+      "views": ["front", "45_degree"],
+      "description": "Detects knee valgus (knees caving in).",
+      "weight": 0.2,
+      "thresholds": {
+        "front": 0.15,
+        "45_degree": 0.15
+      }
+    },
+    {
+      "id": "stance_width",
+      "error_type": "BAD_SETUP",
+      "template": "range",
+      "feature": "stance_width_normalized",
+      "comparator": "MEAN",
+      "phases": ["IDLE"],
+      "interval": "FRAME",
+      "views": ["front", "45_degree"],
+      "description": "Checks if legs are set too narrow or too wide at the start.",
+      "weight": 0.15,
+      "thresholds": {
+        "front": 1.0,
+        "45_degree": 1.0
+      }
+    },
+    {
+      "id": "trunk_stability",
+      "error_type": "INSTABILITY",
+      "template": "stability",
+      "feature": "trunk_angle",
+      "phases": ["CONCENTRIC", "ECCENTRIC"],
+      "interval": "FRAME",
+      "views": ["side", "45_degree"],
+      "description": "Detects excessive trunk sway or 'good morning' squats.",
+      "weight": 0.25,
+      "thresholds": {
+        "side": 3.0,
+        "45_degree": 3.0
+      }
+    },
+    {
+      "id": "descent_tempo",
+      "error_type": "BAD_TEMPO",
+      "template": "duration",
+      "phases": ["CONCENTRIC"],
+      "interval": "PHASE",
+      "views": ["front", "side", "45_degree"],
+      "description": "Ensures controlled descent. Triggers if user 'drops' into the squat too fast.",
+      "weight": 0.1,
+      "thresholds": {
+        "front": 1.5,
+        "side": 1.5,
+        "45_degree": 1.5
+      }
+    },
+    {
+      "id": "hip_symmetry",
+      "error_type": "MOMENTUM_CHEAT",
+      "template": "tempo",
+      "feature": "hip_flexion_symmetry",
+      "phases": ["ECCENTRIC"],
+      "interval": "PHASE",
+      "views": ["front", "45_degree"],
+      "description": "Detects excessive 'hip drive' or jerking the torso to stand up.",
+      "weight": 0.15,
+      "thresholds": {
+        "front": 15.0,
+        "45_degree": 15.0
+      }
+    }
+  ]
+}
