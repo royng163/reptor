@@ -29,10 +29,10 @@ Reptor follows a **Teacher-Student** knowledge distillation architecture:
 
 ```bash
 # Install dependencies
-yarn install
+npm install
 
 # Start the development server
-yarn run dev
+npm run dev
 ```
 
 ## 📂 Project Structure
