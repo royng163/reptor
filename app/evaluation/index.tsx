@@ -9,12 +9,15 @@ import {
   PoseResult,
   RuleEngine,
   RepDetector,
+  FeatureAggregator,
+  FpsNormalizer,
   FrameData,
+  ExerciseId,
 } from '@royng163/reptor-core';
 import featureConfigJson from '@/assets/config/feature_config.json';
 import squatConfig from '@/assets/config/squat.json';
 import bicepCurlConfig from '@/assets/config/bicep_curl.json';
-import { FpsNormalizer } from '@/lib/fps';
+import { generateHint } from '@/lib/hint';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
 
@@ -32,11 +35,18 @@ function loadExerciseConfig(exerciseId: string): any {
   return config;
 }
 
+/**
+ * Normalizes exercise ID to display name.
+ * e.g., "bicep_curl" -> "Bicep Curl"
+ */
 function normalizeExerciseName(value: string) {
   if (!value) return 'Evaluation';
   return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/**
+ * Converts keypoint array to Map for O(1) lookup by name.
+ */
 function toMap(keypoints: Keypoint[]) {
   const map = new Map<string, Keypoint>();
   keypoints.forEach((kp) => {
@@ -45,38 +55,16 @@ function toMap(keypoints: Keypoint[]) {
   return map;
 }
 
-function extractAggFeatures(keypoints: Keypoint[]): Record<string, number> {
-  const byName = toMap(keypoints);
-  const lk = byName.get('left_knee');
-  const rk = byName.get('right_knee');
-  const lh = byName.get('left_hip');
-  const rh = byName.get('right_hip');
-  const ls = byName.get('left_shoulder');
-  const rs = byName.get('right_shoulder');
-  const le = byName.get('left_elbow');
-  const lw = byName.get('left_wrist');
-
-  const safe = (v: number | undefined, fallback = 0) =>
-    Number.isFinite(v) ? (v as number) : fallback;
-
-  return {
-    knee_flexion_left: safe(lk?.y) - 0.62,
-    elbow_flexion_left: 0.42 - safe(le?.y),
-    knee_joint_center_x_offset: Math.abs(safe(lk?.x, 0.5) - safe(rk?.x, 0.5)),
-    stance_width_normalized: Math.abs(safe(lk?.x, 0.45) - safe(rk?.x, 0.55)) - 0.3,
-    trunk_angle: Math.abs((safe(ls?.x) + safe(rs?.x)) / 2 - (safe(lh?.x) + safe(rh?.x)) / 2),
-    hip_flexion_symmetry: Math.abs(safe(lh?.y, 0.5) - safe(rh?.y, 0.5)),
-    elbow_to_shoulder_y_left: safe(le?.y, 0.4) - safe(ls?.y, 0.35),
-    torso_tilt: Math.abs((safe(ls?.x) + safe(rs?.x)) / 2 - (safe(lh?.x) + safe(rh?.x)) / 2),
-    wrist_to_shoulder_y_left: safe(lw?.y, 0.5) - safe(ls?.y, 0.35),
-    wrist_to_shoulder_y_right: safe(byName.get('right_wrist')?.y, 0.5) - safe(rs?.y, 0.35),
-  };
-}
-
+/**
+ * Formats feature value for display. Returns '--' for undefined/invalid values.
+ */
 function formatFeatureValue(v: number | undefined) {
   return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(3) : '--';
 }
 
+/**
+ * Evaluates frame-level rules and returns structured result.
+ */
 function evaluateFromRuleEngine(
   engine: RuleEngine | null,
   features: Record<string, number>,
@@ -100,45 +88,16 @@ function evaluateFromRuleEngine(
   return { errors, quality };
 }
 
-function getPhaseFromRepDetector(detector: RepDetector | null, keypoints: Keypoint[]): PhaseType {
-  if (!detector) return 'IDLE';
-
-  const byName = new Map<string, Keypoint>();
-  keypoints.forEach((kp) => {
-    if (kp.name) byName.set(kp.name, kp);
-  });
-
-  const leftHip = byName.get('left_hip');
-  const rightHip = byName.get('right_hip');
-  const hipY = leftHip && rightHip ? (leftHip.y + rightHip.y) / 2 : undefined;
-
-  if (hipY === undefined) return 'IDLE';
-
-  const result = detector.detect(hipY);
-  return result.state;
-}
-
 export default function EvaluationScreen() {
   const params = useLocalSearchParams<{ exerciseId: string }>();
-  const exerciseId = params.exerciseId;
+  const exerciseId = params.exerciseId as ExerciseId;
   const exerciseName = normalizeExerciseName(exerciseId);
 
   const [lastEval, setLastEval] = useState<{ errors: string[]; quality: number } | null>(null);
   const [featureStats, setFeatureStats] = useState<Record<string, number>>({});
   const [currentPhase, setCurrentPhase] = useState<string>('IDLE');
   const inFlightRef = useRef(false);
-
-  const featureOrder = useMemo(() => featureConfigJson.feature_names ?? [], []);
-  const snapPoints = useMemo(() => ['10%', '35%', '55%', '90%'], []);
-  const triggeredErrors = useMemo(() => new Set(lastEval?.errors ?? []), [lastEval?.errors]);
-
-  const normalizerRef = useRef(new FpsNormalizer(30));
-  const ruleEngineRef = useRef<RuleEngine | null>(null);
-  const repDetectorRef = useRef<RepDetector | null>(null);
-  const [rawKeypoints, setRawKeypoints] = useState<Keypoint[]>([]);
-
-  // Debug logging
-  const [fps, setFps] = useState(30);
+  const frameIdxRef = useRef(0);
 
   const activeExerciseConfig: any = useMemo(() => {
     const config = loadExerciseConfig(exerciseId);
@@ -147,23 +106,47 @@ export default function EvaluationScreen() {
       version: config.version || 2,
       exercise_id: config.exercise_id || 0,
       exercise_name: config.exercise_name || exerciseId,
-      rules: config.rules || [],
+      rules: config.rules ?? [],
     };
   }, [exerciseId]);
 
   const activeRules = activeExerciseConfig?.rules ?? [];
 
+  const feedbackHint = useMemo(() => {
+    if (!lastEval || lastEval.errors.length === 0) return undefined;
+    const firstError = activeRules.find((r: any) => r.error_type === lastEval.errors[0]);
+    if (!firstError) return undefined;
+    const feature = 'feature' in firstError ? firstError.feature : undefined;
+    const val = feature ? featureStats[feature] : undefined;
+    return generateHint(firstError, val);
+  }, [lastEval, activeRules, featureStats]);
+
+  const featureOrder = useMemo(() => featureConfigJson.feature_names ?? [], []);
+  const snapPoints = useMemo(() => ['10%', '35%', '55%', '90%'], []);
+
+  const fpsNormalizerRef = useRef(new FpsNormalizer(30));
+  const ruleEngineRef = useRef<RuleEngine | null>(null);
+  const repDetectorRef = useRef<RepDetector | null>(null);
+  const aggregatorRef = useRef<FeatureAggregator | null>(null);
+
+  // Debug logging
+  const [fps, setFps] = useState(30);
+  const [rawKeypoints, setRawKeypoints] = useState<Keypoint[]>([]);
+  const triggeredErrors = useMemo(() => new Set(lastEval?.errors ?? []), [lastEval?.errors]);
+
   useEffect(() => {
-    normalizerRef.current.reset();
+    fpsNormalizerRef.current.reset();
 
     if (!activeExerciseConfig) {
       ruleEngineRef.current = null;
       repDetectorRef.current = null;
+      aggregatorRef.current = null;
       return;
     }
 
     ruleEngineRef.current = new RuleEngine(activeExerciseConfig, { view: 'front' });
-    repDetectorRef.current = new RepDetector();
+    repDetectorRef.current = new RepDetector(exerciseId as any);
+    aggregatorRef.current = new FeatureAggregator();
   }, [activeExerciseConfig]);
 
   const handlePose = useCallback(
@@ -171,22 +154,51 @@ export default function EvaluationScreen() {
       if (inFlightRef.current) return;
       inFlightRef.current = true;
       try {
-        const normalizedSamples = normalizerRef.current.push(keypoints, timestamp);
+        // 1. Normalize input frames to fixed FPS
+        const normalizedSamples = fpsNormalizerRef.current.push(keypoints, timestamp);
 
-        // RuleEngine always sees normalized 30 FPS stream
         for (const sample of normalizedSamples) {
-          const aggFeatures = extractAggFeatures(sample.keypoints);
+          const keypointMap = toMap(sample.keypoints);
+          // 2. Extract Instant Features
+          const aggFeatures = aggregatorRef.current!.extractFeatures(keypointMap, exerciseId);
 
-          const phase = getPhaseFromRepDetector(repDetectorRef.current, sample.keypoints);
-          setCurrentPhase(phase);
-          const result = evaluateFromRuleEngine(ruleEngineRef.current, aggFeatures, phase);
+          // 3. Detect Phase
+          const { state, isRepFinished, velocity } = repDetectorRef.current!.detect(
+            {
+              knee_flexion_left: aggFeatures.knee_flexion_left,
+              knee_flexion_right: aggFeatures.knee_flexion_right,
+              elbow_flexion_left: aggFeatures.elbow_flexion_left,
+              elbow_flexion_right: aggFeatures.elbow_flexion_right,
+            },
+            frameIdxRef.current
+          );
+          setCurrentPhase(state);
+
+          // 4. Update aggregator phase
+          aggregatorRef.current?.setPhase(state);
+
+          // 5. Evaluate Frame-level rules for instant feedback
+          const result = evaluateFromRuleEngine(ruleEngineRef.current, aggFeatures, state);
 
           setFeatureStats(aggFeatures);
           setLastEval(result);
+          frameIdxRef.current++;
+
+          if (isRepFinished) {
+            const repAggregates = aggregatorRef.current?.getRepAggregates();
+            const phaseAggregates = aggregatorRef.current?.getPhaseAggregates();
+
+            if (repAggregates && ruleEngineRef.current) {
+              ruleEngineRef.current.evaluateWithPhases(repAggregates, phaseAggregates);
+            }
+
+            aggregatorRef.current?.reset();
+            ruleEngineRef.current?.reset();
+          }
         }
 
         setRawKeypoints(keypoints);
-        setFps(normalizerRef.current.getInputFps());
+        setFps(fpsNormalizerRef.current.getInputFps());
       } finally {
         inFlightRef.current = false;
       }
@@ -198,6 +210,7 @@ export default function EvaluationScreen() {
     <View className="bg-background flex-1">
       <Stack.Screen options={{ title: exerciseName }} />
 
+      {/* Feedback hint */}
       {false ? (
         <View className="absolute top-10 right-3 left-3 z-10">
           <Alert variant="destructive" icon={AlertCircleIcon}>
@@ -207,25 +220,34 @@ export default function EvaluationScreen() {
             </AlertDescription>
           </Alert>
         </View>
+      ) : feedbackHint ? (
+        <View className="absolute top-10 right-3 left-3 z-10">
+          <View className="rounded-lg bg-black/70 px-4 py-3">
+            <Text className="text-center text-sm font-medium text-white">{feedbackHint}</Text>
+          </View>
+        </View>
       ) : null}
 
+      {/* Camera View with Pose Detection */}
       <View className="flex-1">
         <CameraView onPose={handlePose} />
       </View>
 
+      {/* Bottom Sheet for Evaluation Debug */}
       <BottomSheet
         snapPoints={snapPoints}
         enableContentPanningGesture={false}
         backgroundStyle={{ backgroundColor: 'transparent' }}
         handleIndicatorStyle={{ backgroundColor: '#71717a' }}>
-        <View className="border-border bg-card flex-1 rounded-t-2xl border px-4 pt-2">
+        <View className="border-border bg-card flex-1 rounded-t-2xl border p-2 pb-6">
           <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+            {/* Current Phase and FPS */}
             <View className="border-border bg-background mb-3 flex-row items-center justify-between rounded-md border px-3 py-2">
               <Text className="text-muted-foreground text-xs">Phase: {currentPhase}</Text>
               <Text className="text-muted-foreground text-xs">FPS: {fps.toFixed(1)}</Text>
             </View>
 
-            {/* Evaluation results */}
+            {/* Rules Triggered */}
             <Text className="text-foreground text-sm font-semibold">
               Corrections ({activeRules.length})
             </Text>
@@ -264,6 +286,7 @@ export default function EvaluationScreen() {
               })}
             </View>
 
+            {/* Feature stats*/}
             <Text className="text-foreground mt-4 text-sm font-semibold">
               Feature Stats ({featureOrder.length})
             </Text>
@@ -280,7 +303,7 @@ export default function EvaluationScreen() {
               ))}
             </View>
 
-            {/* Raw keypoints debug section */}
+            {/* Raw keypoints */}
             <View className="mt-4">
               <Text className="text-foreground text-sm font-semibold">
                 Raw Keypoints ({rawKeypoints.length})
