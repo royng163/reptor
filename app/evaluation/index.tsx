@@ -13,21 +13,18 @@ import {
   FpsNormalizer,
   FrameData,
   ExerciseId,
+  ExerciseConfig,
 } from '@royng163/reptor-core';
 import featureConfigJson from '@/assets/config/feature_config.json';
-import squatConfig from '@/assets/config/squat.json';
-import bicepCurlConfig from '@/assets/config/bicep_curl.json';
+import distilledRuleConfig from '@/assets/config/distilled.json';
 import { generateHint } from '@/lib/hint';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
 
-const EXERCISE_CONFIGS: Record<string, any> = {
-  squat: squatConfig,
-  bicep_curl: bicepCurlConfig,
-};
+const EXERCISE_CONFIGS = distilledRuleConfig as ExerciseConfig[];
 
 function loadExerciseConfig(exerciseId: string): any {
-  const config = EXERCISE_CONFIGS[exerciseId];
+  const config = EXERCISE_CONFIGS.find((e: any) => e.exercise_id === exerciseId);
   if (!config) {
     console.warn(`[RuleEngine] No config found for exercise: "${exerciseId}"`);
     return null;
