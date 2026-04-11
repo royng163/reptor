@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { HouseIcon, CircleUserIcon } from 'lucide-react-native';
+import { HouseIcon, Settings } from 'lucide-react-native';
 
 export default function TabsLayout() {
   return (
@@ -12,10 +12,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="settings"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <CircleUserIcon color={color} />,
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <Settings color={color} />,
         }}
       />
     </Tabs>

@@ -6,7 +6,7 @@ const reptorCorePath = path.resolve(__dirname, '../reptor-core');
 
 const config = getDefaultConfig(__dirname);
 
-config.resolver.assetExts.push('tflite');
+config.resolver.assetExts.push('tflite', 'task');
 
 config.watchFolders = [...(config.watchFolders ?? []), reptorCorePath];
 

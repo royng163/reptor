@@ -21,6 +21,7 @@ import distilledRuleConfig from '@/assets/config/distilled.json';
 import { generateHint } from '@/lib/hint';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
+import { useSettingsStore } from '@/lib/store';
 
 const EXERCISE_CONFIGS = distilledRuleConfig as ExerciseConfig[];
 
@@ -91,6 +92,8 @@ export default function EvaluationScreen() {
   const exerciseId = params.exerciseId as ExerciseId;
   const exerciseName = normalizeExerciseName(exerciseId);
 
+  const { debugMode, viewOption, modelOption } = useSettingsStore();
+
   const [lastEval, setLastEval] = useState<{ errors: string[]; quality: number } | null>(null);
   const [featureStats, setFeatureStats] = useState<Record<string, number>>({});
   const [currentPhase, setCurrentPhase] = useState<string>('IDLE');
@@ -160,10 +163,10 @@ export default function EvaluationScreen() {
       return;
     }
 
-    ruleEngineRef.current = new RuleEngine(activeExerciseConfig, { view: 'front' });
+    ruleEngineRef.current = new RuleEngine(activeExerciseConfig, { view: viewOption as any });
     repDetectorRef.current = new RepDetector(exerciseId as any);
     aggregatorRef.current = new FeatureAggregator();
-  }, [activeExerciseConfig]);
+  }, [activeExerciseConfig, viewOption]);
 
   const handlePose = useCallback(
     async ({ keypoints, timestamp }: PoseResult) => {
@@ -256,107 +259,109 @@ export default function EvaluationScreen() {
       ) : null}
       {/* Camera View with Pose Detection */}
       <View className="flex-1">
-        <CameraView onPose={handlePose} />
+        <CameraView onPose={handlePose} model={modelOption} />
       </View>
 
       {/* Bottom Sheet for Evaluation Debug */}
-      <BottomSheet
-        snapPoints={snapPoints}
-        enableContentPanningGesture={false}
-        backgroundStyle={{ backgroundColor: 'transparent' }}
-        handleIndicatorStyle={{ backgroundColor: '#71717a' }}>
-        <View className="border-border bg-card flex-1 rounded-t-2xl border p-2 pb-6">
-          <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-            {/* Current Phase and FPS */}
-            <View className="border-border bg-background mb-3 flex-row items-center justify-between rounded-md border px-3 py-2">
-              <Text className="text-muted-foreground text-xs">Phase: {currentPhase}</Text>
-              <Text className="text-muted-foreground text-xs">FPS: {fps.toFixed(1)}</Text>
-            </View>
+      {debugMode && (
+        <BottomSheet
+          snapPoints={snapPoints}
+          enableContentPanningGesture={false}
+          backgroundStyle={{ backgroundColor: 'transparent' }}
+          handleIndicatorStyle={{ backgroundColor: '#71717a' }}>
+          <View className="border-border bg-card flex-1 rounded-t-2xl border p-2 pb-6">
+            <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+              {/* Current Phase and FPS */}
+              <View className="border-border bg-background mb-3 flex-row items-center justify-between rounded-md border px-3 py-2">
+                <Text className="text-muted-foreground text-xs">Phase: {currentPhase}</Text>
+                <Text className="text-muted-foreground text-xs">FPS: {fps.toFixed(1)}</Text>
+              </View>
 
-            {/* Rules Triggered */}
-            <Text className="text-foreground text-sm font-semibold">
-              Corrections ({activeRules.length})
-            </Text>
-            <View className="mt-2 gap-1">
-              {activeRules.map((r: (typeof activeRules)[number], i: number) => {
-                const triggered = triggeredErrors.has(r.error_type);
-                const featureA = 'feature' in r ? r.feature : undefined;
-                const featureL = 'feature_left' in r ? r.feature_left : undefined;
-                const featureR = 'feature_right' in r ? r.feature_right : undefined;
+              {/* Rules Triggered */}
+              <Text className="text-foreground text-sm font-semibold">
+                Corrections ({activeRules.length})
+              </Text>
+              <View className="mt-2 gap-1">
+                {activeRules.map((r: (typeof activeRules)[number], i: number) => {
+                  const triggered = triggeredErrors.has(r.error_type);
+                  const featureA = 'feature' in r ? r.feature : undefined;
+                  const featureL = 'feature_left' in r ? r.feature_left : undefined;
+                  const featureR = 'feature_right' in r ? r.feature_right : undefined;
 
-                const valueText = featureA
-                  ? formatFeatureValue(featureStats[featureA])
-                  : featureL && featureR
-                    ? `${formatFeatureValue(featureStats[featureL])} | ${formatFeatureValue(featureStats[featureR])}`
-                    : '--';
+                  const valueText = featureA
+                    ? formatFeatureValue(featureStats[featureA])
+                    : featureL && featureR
+                      ? `${formatFeatureValue(featureStats[featureL])} | ${formatFeatureValue(featureStats[featureR])}`
+                      : '--';
 
-                return (
-                  <View
-                    key={`${r.error_type}_${i}`}
-                    className="border-border bg-background flex-row items-center justify-between rounded-md border px-3 py-2">
-                    <View className="flex-1 pr-2">
-                      <Text className="text-foreground text-xs font-semibold">
-                        {r.description || r.error_type}
+                  return (
+                    <View
+                      key={`${r.error_type}_${i}`}
+                      className="border-border bg-background flex-row items-center justify-between rounded-md border px-3 py-2">
+                      <View className="flex-1 pr-2">
+                        <Text className="text-foreground text-xs font-semibold">
+                          {r.description || r.error_type}
+                        </Text>
+                      </View>
+                      <Text
+                        className={
+                          triggered
+                            ? 'text-xs font-semibold text-red-500'
+                            : 'text-xs font-semibold text-emerald-600'
+                        }>
+                        {valueText}
                       </Text>
                     </View>
-                    <Text
-                      className={
-                        triggered
-                          ? 'text-xs font-semibold text-red-500'
-                          : 'text-xs font-semibold text-emerald-600'
-                      }>
-                      {valueText}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
+                  );
+                })}
+              </View>
 
-            {/* Feature stats*/}
-            <Text className="text-foreground mt-4 text-sm font-semibold">
-              Feature Stats ({featureOrder.length})
-            </Text>
-            <View className="mt-2 gap-1">
-              {featureOrder.map((name) => (
-                <View
-                  key={name}
-                  className="border-border bg-background flex-row items-center justify-between rounded-md border px-3 py-2">
-                  <Text className="text-foreground text-xs">{name}</Text>
-                  <Text className="text-muted-foreground text-xs">
-                    {formatFeatureValue(featureStats[name])}
-                  </Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Raw keypoints */}
-            <View className="mt-4">
-              <Text className="text-foreground text-sm font-semibold">
-                Raw Keypoints ({rawKeypoints.length})
+              {/* Feature stats*/}
+              <Text className="text-foreground mt-4 text-sm font-semibold">
+                Feature Stats ({featureOrder.length})
               </Text>
-              <View className="border-border bg-background mt-1 rounded-md border px-3 py-2">
-                {rawKeypoints.map((kp, i) => (
+              <View className="mt-2 gap-1">
+                {featureOrder.map((name) => (
                   <View
-                    key={`${kp.name ?? 'kp'}_${i}`}
-                    className="border-border border-b py-1 last:border-b-0">
-                    <Text className="text-foreground text-xs font-medium">
-                      {kp.name ?? `kp_${i}`}
-                    </Text>
-                    <Text className="text-muted-foreground font-mono text-xs">
-                      x: {kp.x.toFixed(4)}
-                      {'  '}
-                      y: {kp.y.toFixed(4)}
-                      {'  '}
-                      {kp.z !== undefined ? `z: ${kp.z.toFixed(4)}  ` : ''}
-                      {kp.visibility !== undefined ? `vis: ${kp.visibility.toFixed(2)}` : ''}
+                    key={name}
+                    className="border-border bg-background flex-row items-center justify-between rounded-md border px-3 py-2">
+                    <Text className="text-foreground text-xs">{name}</Text>
+                    <Text className="text-muted-foreground text-xs">
+                      {formatFeatureValue(featureStats[name])}
                     </Text>
                   </View>
                 ))}
               </View>
-            </View>
-          </BottomSheetScrollView>
-        </View>
-      </BottomSheet>
+
+              {/* Raw keypoints */}
+              <View className="mt-4">
+                <Text className="text-foreground text-sm font-semibold">
+                  Raw Keypoints ({rawKeypoints.length})
+                </Text>
+                <View className="border-border bg-background mt-1 rounded-md border px-3 py-2">
+                  {rawKeypoints.map((kp, i) => (
+                    <View
+                      key={`${kp.name ?? 'kp'}_${i}`}
+                      className="border-border border-b py-1 last:border-b-0">
+                      <Text className="text-foreground text-xs font-medium">
+                        {kp.name ?? `kp_${i}`}
+                      </Text>
+                      <Text className="text-muted-foreground font-mono text-xs">
+                        x: {kp.x.toFixed(4)}
+                        {'  '}
+                        y: {kp.y.toFixed(4)}
+                        {'  '}
+                        {kp.z !== undefined ? `z: ${kp.z.toFixed(4)}  ` : ''}
+                        {kp.visibility !== undefined ? `vis: ${kp.visibility.toFixed(2)}` : ''}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </BottomSheetScrollView>
+          </View>
+        </BottomSheet>
+      )}
     </View>
   );
 }

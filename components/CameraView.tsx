@@ -17,13 +17,24 @@ import {
 import { type Keypoint, type PoseResult } from '@royng163/reptor-core';
 import { LANDMARK_NAMES, OVERLAY_LANDMARKS } from '@/lib/constant';
 import { Canvas, Circle } from '@shopify/react-native-skia';
+import type { ModelOption } from '@/lib/store';
 
-export default function CameraView({ onPose }: { onPose: (payload: PoseResult) => void }) {
+const MODEL_FILES: Record<ModelOption, string> = {
+  lite: 'pose_landmarker_lite.task',
+  full: 'pose_landmarker_full.task',
+};
+
+export default function CameraView({
+  onPose,
+  model = 'lite',
+}: {
+  onPose: (payload: PoseResult) => void;
+  model?: ModelOption;
+}) {
   const device = useCameraDevice('front');
   const format = useCameraFormat(device, [{ fps: 30 }]);
   const { hasPermission, requestPermission } = useCameraPermission();
 
-  // Pause camera when nagivated to another screen or app in background
   const isFocused = useNavigation().isFocused();
   const inForeground = useAppState() === 'active';
   const isActive = isFocused && inForeground;
@@ -31,7 +42,6 @@ export default function CameraView({ onPose }: { onPose: (payload: PoseResult) =
   const [overlayLandmarks, setOverlayLandmarks] = useState<Keypoint[]>([]);
   const [viewSize, setViewSize] = useState({ width: 0, height: 0 });
 
-  // Check and request camera permission on mount
   useEffect(() => {
     if (!hasPermission) void requestPermission();
   }, [hasPermission, requestPermission]);
@@ -61,7 +71,7 @@ export default function CameraView({ onPose }: { onPose: (payload: PoseResult) =
       },
     },
     RunningMode.LIVE_STREAM,
-    'pose_landmarker_lite.task',
+    MODEL_FILES[model],
     {
       numPoses: 1,
       minPoseDetectionConfidence: 0.5,
@@ -106,7 +116,6 @@ export default function CameraView({ onPose }: { onPose: (payload: PoseResult) =
         pixelFormat="rgb"
       />
 
-      {/* Overlay landmarks */}
       <View className="absolute inset-0">
         <Canvas style={StyleSheet.absoluteFill}>
           {overlayLandmarks

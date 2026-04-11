@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useUniwind } from 'uniwind';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SettingsProvider } from '@/lib/store';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -20,14 +21,16 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView>
       <SafeAreaProvider>
-        <ThemeProvider value={NAV_THEME[theme ?? 'light']}>
-          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="evaluation/index" />
-          </Stack>
-          <PortalHost />
-        </ThemeProvider>
+        <SettingsProvider>
+          <ThemeProvider value={NAV_THEME[theme ?? 'light']}>
+            <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="evaluation/index" />
+            </Stack>
+            <PortalHost />
+          </ThemeProvider>
+        </SettingsProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
