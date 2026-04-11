@@ -12,8 +12,9 @@
         "evaluation": "PHASE",
         "feature": "elbow_flexion_left",
         "thresholds": {
-          "front": 21.22056221122515,
-          "side": 52.94141876640631
+          "side": 38.17261175970478,
+          "incline": -115.51872687718624,
+          "front": 23.547221248195374
         }
       },
       {
@@ -26,8 +27,9 @@
         "feature_left": "wrist_to_shoulder_y_left",
         "feature_right": "wrist_to_shoulder_y_right",
         "maxDiff": {
-          "front": 0.3778821719984232,
-          "side": 0.3691974113275611
+          "side": 0.12966178712916743,
+          "incline": 0.2320679964822778,
+          "front": 0.5070097891936712
         }
       },
       {
@@ -39,8 +41,9 @@
         "evaluation": "REP",
         "feature": "trunk_angle",
         "max": {
-          "front": 173.22245839915345,
-          "side": 89.30327311712138
+          "side": 89.0551718801622,
+          "incline": 80.89076979702772,
+          "front": 27.69048309326172
         }
       },
       {
@@ -51,12 +54,14 @@
         "targetPhase": "CONCENTRIC",
         "evaluation": "PHASE",
         "minSeconds": {
-          "front": 5.054436607951409,
-          "side": 1.019535925218935
+          "side": 1.1806610785610676,
+          "incline": 1.5872913977902399,
+          "front": 0.5
         },
         "maxSeconds": {
-          "front": 7.054436607951409,
-          "side": 3.019535925218935
+          "side": 3.1806610785610676,
+          "incline": 3.58729139779024,
+          "front": 0.879428722978403
         }
       }
     ]
@@ -74,8 +79,9 @@
         "evaluation": "PHASE",
         "feature": "elbow_flexion_left",
         "thresholds": {
-          "front": 0.06951796263456345,
-          "side": 46.29138823676995
+          "side": 41.23190433333626,
+          "incline": 18.98684506599322,
+          "front": 9.313889420280033
         }
       },
       {
@@ -87,8 +93,9 @@
         "evaluation": "PHASE",
         "feature": "elbow_flexion_left",
         "thresholds": {
-          "front": 144.85934471878346,
-          "side": 133.2198944256002
+          "side": 155.73390074117302,
+          "incline": 143.07130143191372,
+          "front": 164.22344392764577
         }
       },
       {
@@ -100,8 +107,9 @@
         "evaluation": "PHASE",
         "feature": "elbow_to_shoulder_y_left",
         "max": {
-          "front": 0.34608232975006104,
-          "side": 0.4363252818584442
+          "side": 0.4363252818584442,
+          "incline": 0.34608232975006104,
+          "front": 0.504196286201477
         }
       },
       {
@@ -113,8 +121,9 @@
         "evaluation": "PHASE",
         "feature": "torso_tilt",
         "max": {
-          "front": 2.672642707824707,
-          "side": 5.701783657073975
+          "side": 5.701783657073975,
+          "incline": 4.5539045333862305,
+          "front": 1.9306401014328003
         }
       }
     ]
@@ -132,8 +141,8 @@
         "evaluation": "PHASE",
         "feature": "wrist_to_shoulder_y_left",
         "thresholds": {
-          "front": -0.4361283622750057,
-          "side": -0.7716724102071372
+          "side": -0.7716112944801903,
+          "incline": -0.6836449204289439
         }
       },
       {
@@ -145,8 +154,8 @@
         "evaluation": "REP",
         "feature": "torso_tilt",
         "max": {
-          "front": 21.68383811446366,
-          "side": 27.312882199360597
+          "side": 25.120827165450546,
+          "incline": 20.08856855623871
         }
       },
       {
@@ -159,8 +168,8 @@
         "feature_left": "wrist_to_shoulder_y_left",
         "feature_right": "wrist_to_shoulder_y_right",
         "maxDiff": {
-          "front": 0.09015731616621382,
-          "side": 0.1545276424016992
+          "side": 0.15457221063280707,
+          "incline": 0.2522655427455902
         }
       }
     ]
@@ -178,8 +187,9 @@
         "evaluation": "PHASE",
         "feature": "elbow_flexion_left",
         "thresholds": {
-          "front": 137.12730019052182,
-          "side": 176.65971453339253
+          "side": 166.56171451690193,
+          "incline": 143.08172763115581,
+          "front": 145.84751197187592
         }
       },
       {
@@ -192,8 +202,9 @@
         "feature_left": "wrist_to_shoulder_y_left",
         "feature_right": "wrist_to_shoulder_y_right",
         "maxDiff": {
-          "front": 0.3537107354616993,
-          "side": 0.16169124841690063
+          "side": 0.16169124841690063,
+          "incline": 0.23395181975777335,
+          "front": 0.7237924744835262
         }
       },
       {
@@ -205,8 +216,9 @@
         "evaluation": "REP",
         "feature": "trunk_angle",
         "max": {
-          "front": 1.223083257675171,
-          "side": 16.917465209960938
+          "side": 16.917465209960938,
+          "incline": 9.38830280303955,
+          "front": 1.074495792388916
         }
       }
     ]
@@ -224,8 +236,9 @@
         "evaluation": "REP",
         "feature": "knee_flexion_left",
         "thresholds": {
-          "front": 142.2487476111845,
-          "side": 99.79508783532827
+          "side": 90.48520760593763,
+          "incline": 107.31423371677616,
+          "front": 114.64092810636002
         }
       },
       {
@@ -237,8 +250,9 @@
         "evaluation": "FRAME",
         "feature": "knee_joint_center_x_offset",
         "max": {
-          "front": 0.1865120214922711,
-          "side": -4879.290003801289
+          "side": -1050.675066151443,
+          "incline": -1.1120351292728539,
+          "front": 0.22678773207974098
         }
       },
       {
@@ -250,8 +264,9 @@
         "evaluation": "FRAME",
         "feature": "stance_width_normalized",
         "thresholds": {
-          "front": 0.0,
-          "side": 0.0
+          "side": 0.8464959859848022,
+          "incline": 0.4843519926071167,
+          "front": 2.0062488334326285
         }
       },
       {
@@ -263,8 +278,9 @@
         "evaluation": "FRAME",
         "feature": "trunk_angle",
         "maxStd": {
-          "front": 12.55075384931913,
-          "side": 14.550098960076065
+          "side": 18.294848470074626,
+          "incline": 18.071805180109816,
+          "front": 4.2180989038697705
         }
       },
       {
@@ -275,12 +291,14 @@
         "targetPhase": "CONCENTRIC",
         "evaluation": "PHASE",
         "minSeconds": {
-          "front": 0.5,
-          "side": 0.5
+          "side": 0.5,
+          "incline": 0.6333333253860474,
+          "front": 0.5
         },
         "maxSeconds": {
-          "front": 1.3588655207607252,
-          "side": 1.5757670853726728
+          "side": 2.0666667222976685,
+          "incline": 2.6333333253860474,
+          "front": 0.6056630119427029
         }
       },
       {
@@ -292,8 +310,9 @@
         "evaluation": "PHASE",
         "feature": "hip_flexion_symmetry",
         "maxVelocity": {
-          "front": 240.4910125732422,
-          "side": 215.31875610351562
+          "side": 215.31875610351562,
+          "incline": 470.84375026581756,
+          "front": 74.6529541015625
         }
       }
     ]

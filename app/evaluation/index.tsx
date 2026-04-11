@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import * as Speech from 'expo-speech';
 import CameraView from '@/components/CameraView';
 import {
   Keypoint,
@@ -93,8 +94,10 @@ export default function EvaluationScreen() {
   const [lastEval, setLastEval] = useState<{ errors: string[]; quality: number } | null>(null);
   const [featureStats, setFeatureStats] = useState<Record<string, number>>({});
   const [currentPhase, setCurrentPhase] = useState<string>('IDLE');
+  const [feedbackKey, setFeedbackKey] = useState(0);
   const inFlightRef = useRef(false);
   const frameIdxRef = useRef(0);
+  const lastFeedbackRef = useRef<string | null>(null);
 
   const activeExerciseConfig: any = useMemo(() => {
     const config = loadExerciseConfig(exerciseId);
@@ -117,6 +120,22 @@ export default function EvaluationScreen() {
     const val = feature ? featureStats[feature] : undefined;
     return generateHint(firstError, val);
   }, [lastEval, activeRules, featureStats]);
+
+  useEffect(() => {
+    if (feedbackHint && feedbackHint !== lastFeedbackRef.current) {
+      lastFeedbackRef.current = feedbackHint;
+      setFeedbackKey((k) => k + 1);
+
+      Speech.speak(feedbackHint, {
+        language: 'en',
+        pitch: 1.0,
+        rate: 1.2,
+        onError: (error) => console.warn('[Speech] Error:', error),
+      });
+    } else if (!feedbackHint && lastFeedbackRef.current) {
+      lastFeedbackRef.current = null;
+    }
+  }, [feedbackHint]);
 
   const featureOrder = useMemo(() => featureConfigJson.feature_names ?? [], []);
   const snapPoints = useMemo(() => ['10%', '35%', '55%', '90%'], []);
@@ -186,7 +205,18 @@ export default function EvaluationScreen() {
             const phaseAggregates = aggregatorRef.current?.getPhaseAggregates();
 
             if (repAggregates && ruleEngineRef.current) {
-              ruleEngineRef.current.evaluateWithPhases(repAggregates, phaseAggregates);
+              const phaseFeedbacks = ruleEngineRef.current.evaluateWithPhases(
+                repAggregates,
+                phaseAggregates
+              );
+              // Convert to same format as evaluateFromRuleEngine
+              const errors = phaseFeedbacks.filter((f) => !f.passed).map((f) => f.errorType);
+              const totalWeight = phaseFeedbacks.reduce((s, f) => s + (f.weight ?? 1), 0);
+              const failedWeight = phaseFeedbacks
+                .filter((f) => !f.passed)
+                .reduce((s, f) => s + (f.weight ?? 1), 0);
+              const quality = totalWeight > 0 ? Math.max(0, 1 - failedWeight / totalWeight) : 1;
+              setLastEval({ errors, quality });
             }
 
             aggregatorRef.current?.reset();
@@ -218,13 +248,12 @@ export default function EvaluationScreen() {
           </Alert>
         </View>
       ) : feedbackHint ? (
-        <View className="absolute top-10 right-3 left-3 z-10">
+        <View key={feedbackKey} className="absolute top-10 right-3 left-3 z-10">
           <View className="rounded-lg bg-black/70 px-4 py-3">
-            <Text className="text-center text-sm font-medium text-white">{feedbackHint}</Text>
+            <Text className="text-center text-2xl font-bold text-white">{feedbackHint}</Text>
           </View>
         </View>
       ) : null}
-
       {/* Camera View with Pose Detection */}
       <View className="flex-1">
         <CameraView onPose={handlePose} />
