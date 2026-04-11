@@ -22,10 +22,10 @@ const STORAGE_KEY = '@reptor_settings';
 const SettingsContext = createContext<SettingsState | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }): React.ReactElement {
-  const [debugMode, setDebugModeState] = useState(false);
+  const [debugMode, setDebugModeState] = useState(true);
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
   const [viewOption, setViewOptionState] = useState<ViewOption>('front');
-  const [modelOption, setModelOptionState] = useState<ModelOption>('lite');
+  const [modelOption, setModelOptionState] = useState<ModelOption>('full');
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load settings from AsyncStorage on mount
