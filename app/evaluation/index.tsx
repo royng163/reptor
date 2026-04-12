@@ -92,7 +92,7 @@ export default function EvaluationScreen() {
   const exerciseId = params.exerciseId as ExerciseId;
   const exerciseName = normalizeExerciseName(exerciseId);
 
-  const { debugMode, viewOption, modelOption } = useSettingsStore();
+  const { debugMode, viewOption, modelOption, cameraOption } = useSettingsStore();
 
   const [lastEval, setLastEval] = useState<{ errors: string[]; quality: number } | null>(null);
   const [featureStats, setFeatureStats] = useState<Record<string, number>>({});
@@ -121,7 +121,7 @@ export default function EvaluationScreen() {
     if (!firstError) return undefined;
     const feature = 'feature' in firstError ? firstError.feature : undefined;
     const val = feature ? featureStats[feature] : undefined;
-    return generateHint(firstError, val);
+    return generateHint(firstError, val, exerciseId);
   }, [lastEval, activeRules, featureStats]);
 
   useEffect(() => {
@@ -259,7 +259,7 @@ export default function EvaluationScreen() {
       ) : null}
       {/* Camera View with Pose Detection */}
       <View className="flex-1">
-        <CameraView onPose={handlePose} model={modelOption} />
+        <CameraView onPose={handlePose} model={modelOption} camera={cameraOption} />
       </View>
 
       {/* Bottom Sheet for Evaluation Debug */}

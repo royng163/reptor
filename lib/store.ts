@@ -5,6 +5,7 @@ import { Uniwind } from 'uniwind';
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type ViewOption = 'front' | 'side' | 'incline';
 export type ModelOption = 'lite' | 'full';
+export type CameraOption = 'front' | 'back';
 
 interface SettingsState {
   debugMode: boolean;
@@ -15,6 +16,8 @@ interface SettingsState {
   setViewOption: (view: ViewOption) => void;
   modelOption: ModelOption;
   setModelOption: (model: ModelOption) => void;
+  cameraOption: CameraOption;
+  setCameraOption: (camera: CameraOption) => void;
 }
 
 const STORAGE_KEY = '@reptor_settings';
@@ -26,6 +29,7 @@ export function SettingsProvider({ children }: { children: ReactNode }): React.R
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
   const [viewOption, setViewOptionState] = useState<ViewOption>('front');
   const [modelOption, setModelOptionState] = useState<ModelOption>('full');
+  const [cameraOption, setCameraOptionState] = useState<CameraOption>('front');
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load settings from AsyncStorage on mount
@@ -39,6 +43,7 @@ export function SettingsProvider({ children }: { children: ReactNode }): React.R
           if (parsed.themeMode) setThemeModeState(parsed.themeMode);
           if (parsed.viewOption) setViewOptionState(parsed.viewOption);
           if (parsed.modelOption) setModelOptionState(parsed.modelOption);
+          if (parsed.cameraOption) setCameraOptionState(parsed.cameraOption);
         }
       } catch (e) {
         console.error('Failed to load settings:', e);
@@ -56,14 +61,14 @@ export function SettingsProvider({ children }: { children: ReactNode }): React.R
       try {
         await AsyncStorage.setItem(
           STORAGE_KEY,
-          JSON.stringify({ debugMode, themeMode, viewOption, modelOption })
+          JSON.stringify({ debugMode, themeMode, viewOption, modelOption, cameraOption })
         );
       } catch (e) {
         console.error('Failed to save settings:', e);
       }
     };
     saveSettings();
-  }, [debugMode, themeMode, viewOption, modelOption, isLoaded]);
+  }, [debugMode, themeMode, viewOption, modelOption, cameraOption, isLoaded]);
 
   // Apply theme
   useEffect(() => {
@@ -75,6 +80,7 @@ export function SettingsProvider({ children }: { children: ReactNode }): React.R
   const setThemeMode = (mode: ThemeMode) => setThemeModeState(mode);
   const setViewOption = (view: ViewOption) => setViewOptionState(view);
   const setModelOption = (model: ModelOption) => setModelOptionState(model);
+  const setCameraOption = (camera: CameraOption) => setCameraOptionState(camera);
 
   const value: SettingsState = {
     debugMode,
@@ -85,6 +91,8 @@ export function SettingsProvider({ children }: { children: ReactNode }): React.R
     setViewOption,
     modelOption,
     setModelOption,
+    cameraOption,
+    setCameraOption,
   };
 
   return React.createElement(SettingsContext.Provider, { value }, children);

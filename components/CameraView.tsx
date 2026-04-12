@@ -17,7 +17,7 @@ import {
 import { type Keypoint, type PoseResult } from '@royng163/reptor-core';
 import { LANDMARK_NAMES, OVERLAY_LANDMARKS } from '@/lib/constant';
 import { Canvas, Circle } from '@shopify/react-native-skia';
-import type { ModelOption } from '@/lib/store';
+import type { ModelOption, CameraOption } from '@/lib/store';
 
 const MODEL_FILES: Record<ModelOption, string> = {
   lite: 'pose_landmarker_lite.task',
@@ -27,11 +27,15 @@ const MODEL_FILES: Record<ModelOption, string> = {
 export default function CameraView({
   onPose,
   model = 'lite',
+  camera = 'front',
 }: {
   onPose: (payload: PoseResult) => void;
   model?: ModelOption;
+  camera?: CameraOption;
 }) {
-  const device = useCameraDevice('front');
+  const device = useCameraDevice(camera, {
+    physicalDevices: camera === 'back' ? ['wide-angle-camera'] : undefined,
+  });
   const format = useCameraFormat(device, [{ fps: 30 }]);
   const { hasPermission, requestPermission } = useCameraPermission();
 

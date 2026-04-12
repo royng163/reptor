@@ -1,7 +1,13 @@
 import React from 'react';
 import { View, ScrollView } from 'react-native';
 import { Button } from '@/components/ui/button';
-import { useSettingsStore, type ThemeMode, type ViewOption, type ModelOption } from '@/lib/store';
+import {
+  useSettingsStore,
+  type ThemeMode,
+  type ViewOption,
+  type ModelOption,
+  type CameraOption,
+} from '@/lib/store';
 import { Icon } from '@/components/ui/icon';
 import { ChevronDown } from 'lucide-react-native';
 import {
@@ -30,6 +36,11 @@ const MODEL_OPTIONS: { value: ModelOption; label: string }[] = [
   { value: 'full', label: 'Full' },
 ];
 
+const CAMERA_OPTIONS: { value: CameraOption; label: string }[] = [
+  { value: 'front', label: 'Front' },
+  { value: 'back', label: 'Back' },
+];
+
 export default function SettingsScreen() {
   const {
     debugMode,
@@ -40,6 +51,8 @@ export default function SettingsScreen() {
     setViewOption,
     modelOption,
     setModelOption,
+    cameraOption,
+    setCameraOption,
   } = useSettingsStore();
 
   const renderDropdown = (
@@ -99,10 +112,15 @@ export default function SettingsScreen() {
         </View>
 
         <View className="border-border bg-card mt-2 rounded-xl border px-3 py-2">
-          <Text className="text-foreground mb-2 text-base font-semibold">Camera</Text>
-          <SettingRow title="Model" description="BlazePose detection model">
-            {renderDropdown(modelOption, setModelOption, MODEL_OPTIONS)}
+          <Text className="text-foreground mb-2 text-base font-semibold">Vision</Text>
+          <SettingRow title="Camera" description="Device camera to use">
+            {renderDropdown(cameraOption, setCameraOption, CAMERA_OPTIONS)}
           </SettingRow>
+          <View className="border-border border-t">
+            <SettingRow title="Model" description="BlazePose detection model">
+              {renderDropdown(modelOption, setModelOption, MODEL_OPTIONS)}
+            </SettingRow>
+          </View>
           <View className="border-border border-t">
             <SettingRow title="View" description="Camera angle for rule evaluation">
               {renderDropdown(viewOption, setViewOption, VIEW_OPTIONS)}
