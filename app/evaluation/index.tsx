@@ -149,7 +149,7 @@ export default function EvaluationScreen() {
   const aggregatorRef = useRef<FeatureAggregator | null>(null);
 
   // Debug logging
-  const [fps, setFps] = useState(30);
+  const [fps, setFps] = useState(0);
   const [rawKeypoints, setRawKeypoints] = useState<Keypoint[]>([]);
   const triggeredErrors = useMemo(() => new Set(lastEval?.errors ?? []), [lastEval?.errors]);
 
@@ -169,7 +169,7 @@ export default function EvaluationScreen() {
   }, [activeExerciseConfig, viewOption]);
 
   const handlePose = useCallback(
-    async ({ keypoints, timestamp }: PoseResult) => {
+    async ({ keypoints, timestamp, inferenceFps }: PoseResult & { inferenceFps?: number }) => {
       if (inFlightRef.current) return;
       inFlightRef.current = true;
       try {
@@ -228,7 +228,7 @@ export default function EvaluationScreen() {
         }
 
         setRawKeypoints(keypoints);
-        setFps(fpsNormalizerRef.current.getInputFps());
+        setFps(inferenceFps ?? 0);
       } finally {
         inFlightRef.current = false;
       }

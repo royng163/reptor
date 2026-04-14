@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, Text, View, Platform } from 'react-native';
 import {
   Camera,
   useCameraDevice,
@@ -19,9 +19,14 @@ import { LANDMARK_NAMES, OVERLAY_LANDMARKS } from '@/lib/constant';
 import { Canvas, Circle } from '@shopify/react-native-skia';
 import type { ModelOption, CameraOption } from '@/lib/store';
 
+interface PoseResultWithInference extends PoseResult {
+  inferenceFps?: number;
+}
+
 const MODEL_FILES: Record<ModelOption, string> = {
   lite: 'pose_landmarker_lite.task',
   full: 'pose_landmarker_full.task',
+  heavy: 'pose_landmarker_heavy.task',
 };
 
 export default function CameraView({
@@ -29,7 +34,7 @@ export default function CameraView({
   model = 'lite',
   camera = 'front',
 }: {
-  onPose: (payload: PoseResult) => void;
+  onPose: (payload: PoseResultWithInference) => void;
   model?: ModelOption;
   camera?: CameraOption;
 }) {
@@ -46,6 +51,8 @@ export default function CameraView({
   const [overlayLandmarks, setOverlayLandmarks] = useState<Keypoint[]>([]);
   const [viewSize, setViewSize] = useState({ width: 0, height: 0 });
 
+  const statsRef = useRef({ frameCount: 0, sessionStart: 0, lastUpdate: 0, fps: 0 });
+
   useEffect(() => {
     if (!hasPermission) void requestPermission();
   }, [hasPermission, requestPermission]);
@@ -53,8 +60,21 @@ export default function CameraView({
   const poseDetection = usePoseDetection(
     {
       onResults: (result: PoseDetectionResultBundle) => {
+        const now = Date.now();
+
         if (result.results.length === 0 || !result.results[0].landmarks[0]) {
           return;
+        }
+
+        if (statsRef.current.frameCount === 0) {
+          statsRef.current.sessionStart = now;
+        }
+        statsRef.current.frameCount++;
+
+        if (now - statsRef.current.lastUpdate > 500) {
+          const elapsed = (now - statsRef.current.sessionStart) / 1000;
+          statsRef.current.fps = statsRef.current.frameCount / Math.max(1, elapsed);
+          statsRef.current.lastUpdate = now;
         }
 
         const poseLandmarks = result.results[0].landmarks[0];
@@ -67,8 +87,7 @@ export default function CameraView({
         }));
 
         setOverlayLandmarks(keypoints);
-
-        onPose({ keypoints, timestamp: Date.now() });
+        onPose({ keypoints, timestamp: now, inferenceFps: statsRef.current.fps });
       },
       onError: (err) => {
         console.error('[CameraView] Pose detection error:', err.message);

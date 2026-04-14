@@ -34,6 +34,7 @@ const VIEW_OPTIONS: { value: ViewOption; label: string }[] = [
 const MODEL_OPTIONS: { value: ModelOption; label: string }[] = [
   { value: 'lite', label: 'Lite' },
   { value: 'full', label: 'Full' },
+  { value: 'heavy', label: 'Heavy' },
 ];
 
 const CAMERA_OPTIONS: { value: CameraOption; label: string }[] = [

@@ -4,7 +4,7 @@ import { Uniwind } from 'uniwind';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type ViewOption = 'front' | 'side' | 'incline';
-export type ModelOption = 'lite' | 'full';
+export type ModelOption = 'lite' | 'full' | 'heavy';
 export type CameraOption = 'front' | 'back';
 
 interface SettingsState {
