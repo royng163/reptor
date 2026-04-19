@@ -17,16 +17,23 @@ import {
   ExerciseConfig,
 } from '@royng163/reptor-core';
 import featureConfigJson from '@/assets/config/feature_config.json';
-import distilledRuleConfig from '@/assets/config/distilled.json';
+import LSTMTransformerConfig from '@/assets/config/LSTMTransformer_distilled.json';
+import LSTMConfig from '@/assets/config/LSTM_distilled.json';
+import TransformerConfig from '@/assets/config/Transformer_distilled.json';
 import { generateHint } from '@/lib/hint';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
 import { useSettingsStore } from '@/lib/store';
 
-const EXERCISE_CONFIGS = distilledRuleConfig as ExerciseConfig[];
+const CONFIG_MAP: Record<string, ExerciseConfig[]> = {
+  LSTMTransformer: LSTMTransformerConfig as ExerciseConfig[],
+  LSTM: LSTMConfig as ExerciseConfig[],
+  Transformer: TransformerConfig as ExerciseConfig[],
+};
 
-function loadExerciseConfig(exerciseId: string): any {
-  const config = EXERCISE_CONFIGS.find((e: any) => e.exercise_id === exerciseId);
+function loadExerciseConfig(exerciseId: string, modelConfig: string): any {
+  const configs = CONFIG_MAP[modelConfig] ?? CONFIG_MAP['LSTMTransformer'];
+  const config = configs.find((e: any) => e.exercise_id === exerciseId);
   if (!config) {
     console.warn(`[RuleEngine] No config found for exercise: "${exerciseId}"`);
     return null;
@@ -92,7 +99,7 @@ export default function EvaluationScreen() {
   const exerciseId = params.exerciseId as ExerciseId;
   const exerciseName = normalizeExerciseName(exerciseId);
 
-  const { debugMode, viewOption, modelOption, cameraOption } = useSettingsStore();
+  const { debugMode, viewOption, modelOption, cameraOption, modelConfig } = useSettingsStore();
 
   const [lastEval, setLastEval] = useState<{ errors: string[]; quality: number } | null>(null);
   const [featureStats, setFeatureStats] = useState<Record<string, number>>({});
@@ -103,7 +110,7 @@ export default function EvaluationScreen() {
   const lastFeedbackRef = useRef<string | null>(null);
 
   const activeExerciseConfig: any = useMemo(() => {
-    const config = loadExerciseConfig(exerciseId);
+    const config = loadExerciseConfig(exerciseId, modelConfig);
     if (!config) return null;
     return {
       version: config.version || 2,
@@ -111,7 +118,7 @@ export default function EvaluationScreen() {
       exercise_name: config.exercise_name || exerciseId,
       rules: config.rules ?? [],
     };
-  }, [exerciseId]);
+  }, [exerciseId, modelConfig]);
 
   const activeRules = activeExerciseConfig?.rules ?? [];
 
@@ -166,7 +173,7 @@ export default function EvaluationScreen() {
     ruleEngineRef.current = new RuleEngine(activeExerciseConfig, { view: viewOption as any });
     repDetectorRef.current = new RepDetector(exerciseId as any);
     aggregatorRef.current = new FeatureAggregator();
-  }, [activeExerciseConfig, viewOption]);
+  }, [activeExerciseConfig, viewOption, modelConfig]);
 
   const handlePose = useCallback(
     async ({ keypoints, timestamp, inferenceFps }: PoseResult & { inferenceFps?: number }) => {
@@ -300,7 +307,7 @@ export default function EvaluationScreen() {
                       className="border-border bg-background flex-row items-center justify-between rounded-md border px-3 py-2">
                       <View className="flex-1 pr-2">
                         <Text className="text-foreground text-xs font-semibold">
-                          {r.description || r.error_type}
+                          {r.description || r.error_type} [{r.targetPhase}]
                         </Text>
                       </View>
                       <Text

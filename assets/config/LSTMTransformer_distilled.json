@@ -1,0 +1,292 @@
+[
+  {
+    "exercise_id": "bench_press",
+    "exercise_name": "bench_press",
+    "rules": [
+      {
+        "id": "range_0",
+        "error_type": "INSUFFICIENT_RANGE",
+        "type": "range",
+        "comparator": "below",
+        "targetPhase": "CONCENTRIC",
+        "evaluation": "PHASE",
+        "feature": "elbow_flexion_left",
+        "thresholds": {
+          "side": 72.56606577863604,
+          "front": 31.77539178096888,
+          "incline": 15.274525391935098
+        }
+      },
+      {
+        "id": "symmetry_1",
+        "error_type": "ASYMMETRY",
+        "type": "symmetry",
+        "comparator": "min",
+        "targetPhase": "IDLE",
+        "evaluation": "REP",
+        "feature_left": "wrist_to_shoulder_y_left",
+        "feature_right": "wrist_to_shoulder_y_right",
+        "maxDiff": {
+          "side": 0.2042424889525984,
+          "front": 0.48896461363994737,
+          "incline": 0.3455980691042814
+        }
+      },
+      {
+        "id": "alignment_2",
+        "error_type": "BAD_ALIGNMENT",
+        "type": "alignment",
+        "comparator": "min",
+        "targetPhase": "IDLE",
+        "evaluation": "REP",
+        "feature": "trunk_angle",
+        "max": {
+          "side": 89.6813008472173,
+          "front": 168.43821716308594,
+          "incline": 80.6268981008819
+        }
+      },
+      {
+        "id": "duration_3",
+        "error_type": "BAD_TEMPO",
+        "type": "duration",
+        "comparator": "min",
+        "targetPhase": "CONCENTRIC",
+        "evaluation": "PHASE",
+        "minSeconds": {
+          "side": 0.5,
+          "front": 0.5,
+          "incline": 0.5
+        },
+        "maxSeconds": {
+          "side": 1.8033333333333332,
+          "front": 2.423333333333333,
+          "incline": 1.5166666666666666
+        }
+      }
+    ]
+  },
+  {
+    "exercise_id": "bicep_curl",
+    "exercise_name": "bicep_curl",
+    "rules": [
+      {
+        "id": "range_0",
+        "error_type": "INSUFFICIENT_RANGE",
+        "type": "range",
+        "comparator": "below",
+        "targetPhase": "CONCENTRIC",
+        "evaluation": "PHASE",
+        "feature": "elbow_flexion_left",
+        "thresholds": {
+          "side": 41.435934008974016,
+          "front": 9.860409303144976,
+          "incline": 23.133979681766395
+        }
+      },
+      {
+        "id": "range_1",
+        "error_type": "INSUFFICIENT_RANGE",
+        "type": "range",
+        "comparator": "above",
+        "targetPhase": "ECCENTRIC",
+        "evaluation": "PHASE",
+        "feature": "elbow_flexion_left",
+        "thresholds": {
+          "side": 130.2335977265329,
+          "front": 145.54432262073865,
+          "incline": 143.1639561508641
+        }
+      },
+      {
+        "id": "alignment_2",
+        "error_type": "MOMENTUM_CHEAT",
+        "type": "alignment",
+        "comparator": "min",
+        "targetPhase": "CONCENTRIC",
+        "evaluation": "PHASE",
+        "feature": "elbow_to_shoulder_y_left",
+        "max": {
+          "side": 0.5935576937415384,
+          "front": 0.5064387267286127,
+          "incline": 0.5473260981868012
+        }
+      }
+    ]
+  },
+  {
+    "exercise_id": "lat_pulldown",
+    "exercise_name": "lat_pulldown",
+    "rules": [
+      {
+        "id": "range_0",
+        "error_type": "INSUFFICIENT_RANGE",
+        "type": "range",
+        "comparator": "below",
+        "targetPhase": "CONCENTRIC",
+        "evaluation": "PHASE",
+        "feature": "wrist_to_shoulder_y_left",
+        "thresholds": {
+          "side": -0.8132208748297258,
+          "incline": -0.907957733881594
+        }
+      },
+      {
+        "id": "alignment_1",
+        "error_type": "BAD_ALIGNMENT",
+        "type": "alignment",
+        "comparator": "min",
+        "targetPhase": "IDLE",
+        "evaluation": "REP",
+        "feature": "torso_tilt",
+        "max": {
+          "side": 16.161899566650582,
+          "incline": 20.4162126020952
+        }
+      },
+      {
+        "id": "symmetry_2",
+        "error_type": "ASYMMETRY",
+        "type": "symmetry",
+        "comparator": "min",
+        "targetPhase": "IDLE",
+        "evaluation": "REP",
+        "feature_left": "wrist_to_shoulder_y_left",
+        "feature_right": "wrist_to_shoulder_y_right",
+        "maxDiff": {
+          "side": 0.07642174850810658,
+          "incline": 0.008176445960998535
+        }
+      }
+    ]
+  },
+  {
+    "exercise_id": "shoulder_press",
+    "exercise_name": "shoulder_press",
+    "rules": [
+      {
+        "id": "range_0",
+        "error_type": "INSUFFICIENT_RANGE",
+        "type": "range",
+        "comparator": "above",
+        "targetPhase": "CONCENTRIC",
+        "evaluation": "PHASE",
+        "feature": "elbow_flexion_left",
+        "thresholds": {
+          "side": 179.8676961263021,
+          "front": 122.75623645204492,
+          "incline": 129.12149556477868
+        }
+      },
+      {
+        "id": "symmetry_1",
+        "error_type": "ASYMMETRY",
+        "type": "symmetry",
+        "comparator": "min",
+        "targetPhase": "IDLE",
+        "evaluation": "REP",
+        "feature_left": "wrist_to_shoulder_y_left",
+        "feature_right": "wrist_to_shoulder_y_right",
+        "maxDiff": {
+          "side": 0.2843312919139862,
+          "front": 0.14371437014955565,
+          "incline": 0.26539083984163075
+        }
+      }
+    ]
+  },
+  {
+    "exercise_id": "squat",
+    "exercise_name": "squat",
+    "rules": [
+      {
+        "id": "range_0",
+        "error_type": "INSUFFICIENT_RANGE",
+        "type": "range",
+        "comparator": "below",
+        "targetPhase": "CONCENTRIC",
+        "evaluation": "PHASE",
+        "feature": "knee_flexion_left",
+        "thresholds": {
+          "side": 110.94279641816112,
+          "front": 136.38941123268822,
+          "incline": 141.01063352642643
+        }
+      },
+      {
+        "id": "alignment_1",
+        "error_type": "BAD_ALIGNMENT",
+        "type": "alignment",
+        "comparator": "min",
+        "targetPhase": "CONCENTRIC",
+        "evaluation": "FRAME",
+        "feature": "knee_joint_center_x_offset",
+        "max": {
+          "side": 481.802173653046,
+          "front": 1.2906882148800478,
+          "incline": 1.2020946813352182
+        }
+      },
+      {
+        "id": "range_2",
+        "error_type": "BAD_SETUP",
+        "type": "range",
+        "comparator": "mean",
+        "targetPhase": "IDLE",
+        "evaluation": "REP",
+        "feature": "stance_width_normalized",
+        "thresholds": {
+          "side": 11.143046379089355,
+          "front": 2.317857785658403,
+          "incline": 2.491826541496059
+        }
+      },
+      {
+        "id": "stability_3",
+        "error_type": "INSTABILITY",
+        "type": "stability",
+        "comparator": "min",
+        "targetPhase": "CONCENTRIC",
+        "evaluation": "FRAME",
+        "feature": "trunk_angle",
+        "maxStd": {
+          "side": 19.35296536455268,
+          "front": 3.851968180049564,
+          "incline": 20.58194065094003
+        }
+      },
+      {
+        "id": "duration_4",
+        "error_type": "BAD_TEMPO",
+        "type": "duration",
+        "comparator": "min",
+        "targetPhase": "CONCENTRIC",
+        "evaluation": "PHASE",
+        "minSeconds": {
+          "side": 1.0683333333333334,
+          "front": 0.5866666666666667,
+          "incline": 1.0333333333333334
+        },
+        "maxSeconds": {
+          "side": 1.4,
+          "front": 1.6333333333333333,
+          "incline": 1.4299999999999997
+        }
+      },
+      {
+        "id": "tempo_5",
+        "error_type": "MOMENTUM_CHEAT",
+        "type": "tempo",
+        "comparator": "min",
+        "targetPhase": "ECCENTRIC",
+        "evaluation": "PHASE",
+        "feature": "hip_flexion_symmetry",
+        "maxVelocity": {
+          "side": 244.1019416577889,
+          "front": 69.58948308771308,
+          "incline": 132.09333939985797
+        }
+      }
+    ]
+  }
+]

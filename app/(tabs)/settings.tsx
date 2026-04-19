@@ -7,6 +7,7 @@ import {
   type ViewOption,
   type ModelOption,
   type CameraOption,
+  type ModelConfigOption,
 } from '@/lib/store';
 import { Icon } from '@/components/ui/icon';
 import { ChevronDown } from 'lucide-react-native';
@@ -42,6 +43,12 @@ const CAMERA_OPTIONS: { value: CameraOption; label: string }[] = [
   { value: 'back', label: 'Back' },
 ];
 
+const MODEL_CONFIG_OPTIONS: { value: ModelConfigOption; label: string }[] = [
+  { value: 'LSTMTransformer', label: 'LSTM+Transformer' },
+  { value: 'LSTM', label: 'LSTM Only' },
+  { value: 'Transformer', label: 'Transformer Only' },
+];
+
 export default function SettingsScreen() {
   const {
     debugMode,
@@ -54,6 +61,8 @@ export default function SettingsScreen() {
     setModelOption,
     cameraOption,
     setCameraOption,
+    modelConfig,
+    setModelConfig,
   } = useSettingsStore();
 
   const renderDropdown = (
@@ -125,6 +134,11 @@ export default function SettingsScreen() {
           <View className="border-border border-t">
             <SettingRow title="View" description="Camera angle for rule evaluation">
               {renderDropdown(viewOption, setViewOption, VIEW_OPTIONS)}
+            </SettingRow>
+          </View>
+          <View className="border-border border-t">
+            <SettingRow title="Engine Config" description="Rule config for evaluation">
+              {renderDropdown(modelConfig, setModelConfig, MODEL_CONFIG_OPTIONS)}
             </SettingRow>
           </View>
         </View>
