@@ -69,6 +69,32 @@ function formatFeatureValue(v: number | undefined) {
 }
 
 /**
+ * Extracts all unique feature names required by the rules.
+ */
+function extractRequiredFeatures(rules: any[]): Set<string> {
+  const features = new Set<string>();
+  for (const rule of rules) {
+    if (rule.feature) features.add(rule.feature);
+    if (rule.feature_left) features.add(rule.feature_left);
+    if (rule.feature_right) features.add(rule.feature_right);
+  }
+  return features;
+}
+
+function hasValidFeatures(
+  requiredFeatures: Set<string>,
+  featureStats: Record<string, number>
+): boolean {
+  for (const feature of requiredFeatures) {
+    const value = featureStats[feature];
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
  * Evaluates frame-level rules and returns structured result.
  */
 function evaluateFromRuleEngine(
@@ -105,6 +131,7 @@ export default function EvaluationScreen() {
   const [featureStats, setFeatureStats] = useState<Record<string, number>>({});
   const [currentPhase, setCurrentPhase] = useState<string>('IDLE');
   const [feedbackKey, setFeedbackKey] = useState(0);
+  const [featuresAvailable, setFeaturesAvailable] = useState(false);
   const inFlightRef = useRef(false);
   const frameIdxRef = useRef(0);
   const lastFeedbackRef = useRef<string | null>(null);
@@ -121,9 +148,10 @@ export default function EvaluationScreen() {
   }, [exerciseId, modelConfig]);
 
   const activeRules = activeExerciseConfig?.rules ?? [];
+  const requiredFeatures = useMemo(() => extractRequiredFeatures(activeRules), [activeRules]);
 
   const feedbackHint = useMemo(() => {
-    if (!lastEval || lastEval.errors.length === 0) return undefined;
+    if (!lastEval) return undefined;
     const firstError = activeRules.find((r: any) => r.error_type === lastEval.errors[0]);
     if (!firstError) return undefined;
     const feature = 'feature' in firstError ? firstError.feature : undefined;
@@ -148,7 +176,7 @@ export default function EvaluationScreen() {
   }, [feedbackHint]);
 
   const featureOrder = useMemo(() => featureConfigJson.feature_names ?? [], []);
-  const snapPoints = useMemo(() => ['10%', '35%', '55%', '90%'], []);
+  const snapPoints = useMemo(() => ['10%', '35%', '55%', '85%'], []);
 
   const fpsNormalizerRef = useRef(new FpsNormalizer(30));
   const ruleEngineRef = useRef<RuleEngine | null>(null);
@@ -158,6 +186,7 @@ export default function EvaluationScreen() {
   // Debug logging
   const [fps, setFps] = useState(0);
   const [rawKeypoints, setRawKeypoints] = useState<Keypoint[]>([]);
+  const [repCount, setRepCount] = useState(0);
   const triggeredErrors = useMemo(() => new Set(lastEval?.errors ?? []), [lastEval?.errors]);
 
   useEffect(() => {
@@ -187,6 +216,17 @@ export default function EvaluationScreen() {
           const keypointMap = toMap(sample.keypoints);
           // 2. Extract Instant Features
           const aggFeatures = aggregatorRef.current!.extractFeatures(keypointMap, exerciseId);
+          const featuresAvailable = hasValidFeatures(requiredFeatures, aggFeatures);
+          setFeaturesAvailable(featuresAvailable);
+
+          if (!featuresAvailable) {
+            frameIdxRef.current = 0;
+            setFeatureStats({});
+            setCurrentPhase('IDLE');
+            aggregatorRef.current?.reset();
+            ruleEngineRef.current?.reset();
+            continue;
+          }
 
           // 3. Detect Phase
           const { state, isRepFinished, velocity } = repDetectorRef.current!.detect(
@@ -211,6 +251,7 @@ export default function EvaluationScreen() {
           frameIdxRef.current++;
 
           if (isRepFinished) {
+            setRepCount((c) => c + 1);
             const repAggregates = aggregatorRef.current?.getRepAggregates();
             const phaseAggregates = aggregatorRef.current?.getPhaseAggregates();
 
@@ -240,21 +281,32 @@ export default function EvaluationScreen() {
         inFlightRef.current = false;
       }
     },
-    [exerciseId]
+    [exerciseId, requiredFeatures]
   );
 
   return (
     <View className="bg-background flex-1">
-      <Stack.Screen options={{ title: exerciseName }} />
+      <Stack.Screen
+        options={{
+          title: repCount > 0 ? `${exerciseName} (${repCount})` : exerciseName,
+          headerRight: () => (
+            <Text className="text-muted-foreground pr-2 text-sm">
+              {repCount === 0
+                ? 'Evaluating'
+                : (lastEval?.quality ?? 0) > 0.8
+                  ? `Good Rep`
+                  : `Bad Rep (${lastEval?.quality})`}
+            </Text>
+          ),
+        }}
+      />
 
       {/* Feedback hint */}
-      {false ? (
+      {!featuresAvailable ? (
         <View className="absolute top-10 right-3 left-3 z-10">
           <Alert variant="destructive" icon={AlertCircleIcon}>
-            <AlertTitle>Minimum Hardware Requirement Not Met</AlertTitle>
-            <AlertDescription>
-              Your device is running at {fps.toFixed(0)} FPS, which is below the minimum requirement
-            </AlertDescription>
+            <AlertTitle>Evaluation Paused</AlertTitle>
+            <AlertDescription>Make sure your body is in frame</AlertDescription>
           </Alert>
         </View>
       ) : feedbackHint ? (
@@ -266,7 +318,12 @@ export default function EvaluationScreen() {
       ) : null}
       {/* Camera View with Pose Detection */}
       <View className="flex-1">
-        <CameraView onPose={handlePose} model={modelOption} camera={cameraOption} />
+        <CameraView
+          onPose={handlePose}
+          model={modelOption}
+          camera={cameraOption}
+          debug={debugMode}
+        />
       </View>
 
       {/* Bottom Sheet for Evaluation Debug */}

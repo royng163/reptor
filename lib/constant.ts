@@ -44,4 +44,8 @@ export const OVERLAY_LANDMARKS = [
   'right_knee',
   'left_ankle',
   'right_ankle',
+  'left_elbow',
+  'right_elbow',
+  'left_wrist',
+  'right_wrist',
 ] as const;

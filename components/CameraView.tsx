@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { StyleSheet, Text, View, Platform } from 'react-native';
 import {
   Camera,
@@ -33,10 +33,12 @@ export default function CameraView({
   onPose,
   model = 'lite',
   camera = 'front',
+  debug = true,
 }: {
   onPose: (payload: PoseResultWithInference) => void;
   model?: ModelOption;
   camera?: CameraOption;
+  debug?: boolean;
 }) {
   const device = useCameraDevice(camera, {
     physicalDevices: camera === 'back' ? ['wide-angle-camera'] : undefined,
@@ -139,21 +141,30 @@ export default function CameraView({
         pixelFormat="rgb"
       />
 
-      <View className="absolute inset-0">
-        <Canvas style={StyleSheet.absoluteFill}>
-          {overlayLandmarks
-            .filter(
-              (lm) =>
-                lm.name && OVERLAY_LANDMARKS.includes(lm.name as (typeof OVERLAY_LANDMARKS)[number])
-            )
-            .map((lm, i) => {
-              if (!lm.visibility || lm.visibility < 0.5) return null;
-              return (
-                <Circle key={`${lm.name ?? 'lm'}_${i}`} cx={lm.x} cy={lm.y} r={3} color="#00FF00" />
-              );
-            })}
-        </Canvas>
-      </View>
+      {debug && (
+        <View className="absolute inset-0">
+          <Canvas style={StyleSheet.absoluteFill}>
+            {overlayLandmarks
+              .filter(
+                (lm) =>
+                  lm.name &&
+                  OVERLAY_LANDMARKS.includes(lm.name as (typeof OVERLAY_LANDMARKS)[number])
+              )
+              .map((lm, i) => {
+                if (!lm.visibility || lm.visibility < 0.5) return null;
+                return (
+                  <Circle
+                    key={`${lm.name ?? 'lm'}_${i}`}
+                    cx={lm.x}
+                    cy={lm.y}
+                    r={3}
+                    color="#00FF00"
+                  />
+                );
+              })}
+          </Canvas>
+        </View>
+      )}
     </View>
   );
 }
