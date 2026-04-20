@@ -5,13 +5,14 @@ export function generateHint(
   featureValue: number | undefined,
   exerciseId?: ExerciseId
 ): string {
-  const { error_type, feature, type } = rule;
+  const { error_type, feature, type, targetPhase } = rule;
 
   if (error_type === 'INSUFFICIENT_RANGE') {
     if (exerciseId === 'squat') {
       return 'Go lower';
     }
     if (exerciseId === 'bicep_curl') {
+      if (rule.targetPhase === 'ECCENTRIC') return 'Lower fully';
       return 'Squeeze at the top';
     }
     if (exerciseId === 'bench_press') {

@@ -94,32 +94,6 @@ function hasValidFeatures(
   return true;
 }
 
-/**
- * Evaluates frame-level rules and returns structured result.
- */
-function evaluateFromRuleEngine(
-  engine: RuleEngine | null,
-  features: Record<string, number>,
-  phase: PhaseType = 'IDLE'
-) {
-  if (!engine) return { errors: [] as string[], quality: 1 };
-
-  let feedbacks: ReturnType<RuleEngine['evaluateFrame']> = [];
-  try {
-    feedbacks = engine.evaluateFrame(features as FrameData, phase);
-  } catch (e) {
-    console.warn('[RuleEngine] evaluateFrame error:', e);
-    return { errors: [] as string[], quality: 1 };
-  }
-
-  const errors = feedbacks.filter((f) => !f.passed).map((f) => f.errorType);
-  const totalWeight = feedbacks.reduce((s, f) => s + (f.weight ?? 1), 0);
-  const failedWeight = feedbacks.filter((f) => !f.passed).reduce((s, f) => s + (f.weight ?? 1), 0);
-  const quality = totalWeight > 0 ? Math.max(0, 1 - failedWeight / totalWeight) : 1;
-
-  return { errors, quality };
-}
-
 export default function EvaluationScreen() {
   const params = useLocalSearchParams<{ exerciseId: string }>();
   const exerciseId = params.exerciseId as ExerciseId;
@@ -186,7 +160,6 @@ export default function EvaluationScreen() {
   // Debug logging
   const [fps, setFps] = useState(0);
   const [rawKeypoints, setRawKeypoints] = useState<Keypoint[]>([]);
-  const [repCount, setRepCount] = useState(0);
   const triggeredErrors = useMemo(() => new Set(lastEval?.errors ?? []), [lastEval?.errors]);
 
   useEffect(() => {
@@ -242,16 +215,10 @@ export default function EvaluationScreen() {
 
           // 4. Update aggregator phase
           aggregatorRef.current?.setPhase(state);
-
-          // 5. Evaluate Frame-level rules for instant feedback
-          const result = evaluateFromRuleEngine(ruleEngineRef.current, aggFeatures, state);
-
           setFeatureStats(aggFeatures);
-          setLastEval(result);
           frameIdxRef.current++;
 
           if (isRepFinished) {
-            setRepCount((c) => c + 1);
             const repAggregates = aggregatorRef.current?.getRepAggregates();
             const phaseAggregates = aggregatorRef.current?.getPhaseAggregates();
 
@@ -288,14 +255,22 @@ export default function EvaluationScreen() {
     <View className="bg-background flex-1">
       <Stack.Screen
         options={{
-          title: repCount > 0 ? `${exerciseName} (${repCount})` : exerciseName,
+          title: exerciseName,
           headerRight: () => (
-            <Text className="text-muted-foreground pr-2 text-sm">
-              {repCount === 0
+            <Text
+              className="pr-2 text-sm font-semibold"
+              style={{
+                color: !lastEval
+                  ? '#a1a1aa'
+                  : (lastEval?.quality ?? 0) > 0.8
+                    ? '#10b981'
+                    : '#ef4444',
+              }}>
+              {!lastEval
                 ? 'Evaluating'
                 : (lastEval?.quality ?? 0) > 0.8
                   ? `Good Rep`
-                  : `Bad Rep (${lastEval?.quality})`}
+                  : `Bad Rep (${lastEval?.quality.toFixed(2)})`}
             </Text>
           ),
         }}
@@ -337,8 +312,12 @@ export default function EvaluationScreen() {
             <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 24 }}>
               {/* Current Phase and FPS */}
               <View className="border-border bg-background mb-3 flex-row items-center justify-between rounded-md border px-3 py-2">
-                <Text className="text-muted-foreground text-xs">Phase: {currentPhase}</Text>
-                <Text className="text-muted-foreground text-xs">FPS: {fps.toFixed(1)}</Text>
+                <Text className="text-muted-foreground text-xs">
+                  View: {viewOption} | Model: {modelOption}
+                </Text>
+                <Text className="text-muted-foreground text-xs">
+                  {currentPhase} | {fps.toFixed(1)} FPS
+                </Text>
               </View>
 
               {/* Rules Triggered */}
