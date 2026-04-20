@@ -80,22 +80,8 @@
         "feature": "elbow_flexion_left",
         "thresholds": {
           "side": 41.435934008974016,
-          "front": 9.860409303144976,
+          "front": 19.860409303144976,
           "incline": 23.133979681766395
-        }
-      },
-      {
-        "id": "range_1",
-        "error_type": "INSUFFICIENT_RANGE",
-        "type": "range",
-        "comparator": "above",
-        "targetPhase": "ECCENTRIC",
-        "evaluation": "PHASE",
-        "feature": "elbow_flexion_left",
-        "thresholds": {
-          "side": 130.2335977265329,
-          "front": 145.54432262073865,
-          "incline": 143.1639561508641
         }
       },
       {
@@ -107,9 +93,9 @@
         "evaluation": "PHASE",
         "feature": "elbow_to_shoulder_y_left",
         "max": {
-          "side": 0.5935576937415384,
-          "front": 0.5064387267286127,
-          "incline": 0.5473260981868012
+          "side": 75.935576937415384,
+          "front": 75.064387267286127,
+          "incline": 75.473260981868012
         }
       }
     ]
