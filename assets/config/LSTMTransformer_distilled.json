@@ -79,7 +79,7 @@
         "evaluation": "PHASE",
         "feature": "elbow_flexion_left",
         "thresholds": {
-          "side": 41.435934008974016,
+          "side": 51.435934008974016,
           "front": 19.860409303144976,
           "incline": 23.133979681766395
         }
@@ -93,9 +93,9 @@
         "evaluation": "PHASE",
         "feature": "elbow_to_shoulder_y_left",
         "max": {
-          "side": 75.935576937415384,
+          "side": 85.935576937415384,
           "front": 75.064387267286127,
-          "incline": 75.473260981868012
+          "incline": 85.473260981868012
         }
       }
     ]

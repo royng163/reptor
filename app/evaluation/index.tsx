@@ -315,9 +315,7 @@ export default function EvaluationScreen() {
                 <Text className="text-muted-foreground text-xs">
                   View: {viewOption} | Model: {modelOption}
                 </Text>
-                <Text className="text-muted-foreground text-xs">
-                  {currentPhase} | {fps.toFixed(1)} FPS
-                </Text>
+                <Text className="text-muted-foreground text-xs">{fps.toFixed(1)} FPS</Text>
               </View>
 
               {/* Rules Triggered */}
